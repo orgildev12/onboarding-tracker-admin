@@ -22,7 +22,7 @@
     "description": { "default": "onboarding-tracker description" },
     "officeFabricIconFontName": "Page",
     "properties": {
-      "description": "onboarding-tracker"
+      "listName": "Tasks"
     }
   }]
 }

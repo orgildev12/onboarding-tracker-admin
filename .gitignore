@@ -2,6 +2,9 @@
 logs
 *.log
 npm-debug.log*
+.env
+tailwind.generated.css
+src/webparts/onboardingTracker/tailwind.styles.ts
 
 # Dependency directories
 node_modules

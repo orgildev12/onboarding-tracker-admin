@@ -42,12 +42,12 @@ Short summary on functionality and used technologies.
 
 ## Minimal Path to Awesome
 
-- Clone this repository
-- Ensure that you are at the solution folder
-- in the command-line run:
-  - `npm install -g @rushstack/heft`
-  - `npm install`
-  - `heft start`
+1. Use Node.js `>=22.14.0 <23.0.0`.
+2. Run `npm install`.
+3. Set `SPFX_SERVE_TENANT_DOMAIN` in `.env` to your SharePoint hostname, for example `contoso.sharepoint.com`. Copy `.env.example` as a starting point if needed.
+4. Run `npm start` and open the SharePoint workbench URL.
+
+Tailwind CSS v3 utilities are available in TSX files with the `tw-` prefix (for example, `className="tw-flex tw-gap-2 tw-p-4"`). `npm start` watches Tailwind and Heft; `npm run build` generates production CSS before packaging. Existing SCSS modules remain supported. Tailwind's preflight reset is disabled to avoid changing SharePoint styles.
 
 > Include any additional steps as needed.
 

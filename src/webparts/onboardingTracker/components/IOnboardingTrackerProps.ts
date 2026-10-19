@@ -1,6 +1,8 @@
+import type { ListService } from '../services/ListService';
+
 export interface IOnboardingTrackerProps {
-  description: string;
+  listName: string;
+  listService: ListService;
   isDarkTheme: boolean;
-  environmentMessage: string;
   userDisplayName: string;
 }

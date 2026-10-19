@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
+import { loadStyles } from '@microsoft/load-themed-styles';
 import {
   type IPropertyPaneConfiguration,
   PropertyPaneTextField
@@ -11,9 +12,13 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import * as strings from 'OnboardingTrackerWebPartStrings';
 import OnboardingTracker from './components/OnboardingTracker';
 import { IOnboardingTrackerProps } from './components/IOnboardingTrackerProps';
+import { ListService } from './services/ListService';
+import { tailwindStyles } from './tailwind.styles';
+
+loadStyles(tailwindStyles);
 
 export interface IOnboardingTrackerWebPartProps {
-  description: string;
+  listName: string;
 }
 
 export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnboardingTrackerWebPartProps> {
@@ -22,12 +27,13 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
   private _environmentMessage: string = '';
 
   public render(): void {
+    const listName: string = this.properties.listName || 'Tasks';
     const element: React.ReactElement<IOnboardingTrackerProps> = React.createElement(
       OnboardingTracker,
       {
-        description: this.properties.description,
+        listName,
+        listService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, listName),
         isDarkTheme: this._isDarkTheme,
-        environmentMessage: this._environmentMessage,
         userDisplayName: this.context.pageContext.user.displayName
       }
     );
@@ -107,8 +113,8 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
             {
               groupName: strings.BasicGroupName,
               groupFields: [
-                PropertyPaneTextField('description', {
-                  label: strings.DescriptionFieldLabel
+                PropertyPaneTextField('listName', {
+                  label: strings.ListNameFieldLabel
                 })
               ]
             }

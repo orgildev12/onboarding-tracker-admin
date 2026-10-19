@@ -1,44 +1,67 @@
 import * as React from 'react';
 import styles from './OnboardingTracker.module.scss';
 import type { IOnboardingTrackerProps } from './IOnboardingTrackerProps';
-import { escape } from '@microsoft/sp-lodash-subset';
-import welcomeDark from '../assets/welcome-dark.png';
-import welcomeLight from '../assets/welcome-light.png';
+import NavBar from './NavBar';
+import type { INavItem } from './NavBar';
+import HomePage from './pages/HomePage';
+import NewEmployeeProcessPage from './pages/NewEmployeeProcessPage';
+import SettingsPage from './pages/SettingsPage';
+import HistoryPage from './pages/HistoryPage';
+import TestPage from './pages/TestPage';
+import type { IEmployee } from '../models/Employee';
 
-export default class OnboardingTracker extends React.Component<IOnboardingTrackerProps> {
+interface IState {
+  page: string;
+  selectedEmployee: IEmployee | undefined;
+  // page to return to from the employee process page
+  returnPage: 'home' | 'history';
+}
+
+// Pages without a nav item are still reachable by setting `page` (e.g. from a button on another page).
+const NAV_ITEMS: INavItem[] = [
+  { key: 'home', title: 'Home', iconName: 'Home' },
+  { key: 'history', title: 'History', iconName: 'History' },
+  { key: 'settings', title: 'Settings', iconName: 'Settings' },
+  { key: 'test', title: 'Test', iconName: 'TestBeaker' }
+];
+
+export default class OnboardingTracker extends React.Component<IOnboardingTrackerProps, IState> {
+  public state: IState = { page: 'home', selectedEmployee: undefined, returnPage: 'home' };
+
+  private _showEmployee = (employee: IEmployee, returnPage: 'home' | 'history'): void => {
+    this.setState({ page: 'newEmployeeProcess', selectedEmployee: employee, returnPage });
+  };
+
+  private _renderPage(): React.ReactElement {
+    switch (this.state.page) {
+      case 'newEmployeeProcess':
+        return this.state.selectedEmployee
+          ? <NewEmployeeProcessPage employee={this.state.selectedEmployee} onBack={() => this.setState({ page: this.state.returnPage })} />
+          : <HomePage onSelectEmployee={e => this._showEmployee(e, 'home')} />;
+      case 'history':
+        return <HistoryPage onSelectEmployee={e => this._showEmployee(e, 'history')} />;
+      case 'settings':
+        return <SettingsPage />;
+      case 'test':
+        return <TestPage {...this.props} />;
+      default:
+        return <HomePage onSelectEmployee={e => this._showEmployee(e, 'home')} />;
+    }
+  }
+
   public render(): React.ReactElement<IOnboardingTrackerProps> {
-    const {
-      description,
-      isDarkTheme,
-      environmentMessage,
-      userDisplayName
-    } = this.props;
-
     return (
-      <section className={`${styles.onboardingTracker}`}>
-        <div className={styles.welcome}>
-          <img alt="" src={isDarkTheme ? welcomeDark : welcomeLight} className={styles.welcomeImage} />
-          <h2>Well done, {escape(userDisplayName)}!</h2>
-          <div>{environmentMessage}</div>
-          <div>Web part property value: <strong>{escape(description)}</strong></div>
+      <div className={styles.onboardingTracker}>
+        <header className={styles.appHeader}>Onboarding process tracker</header>
+        <div className={styles.workspace}>
+          <NavBar
+            items={NAV_ITEMS}
+            selectedKey={this.state.page === 'newEmployeeProcess' ? this.state.returnPage : this.state.page}
+            onSelect={page => this.setState({ page, selectedEmployee: undefined })}
+          />
+          <main className={styles.content}>{this._renderPage()}</main>
         </div>
-        <div>
-          <h3>Welcome to SharePoint Framework!</h3>
-          <p>
-            The SharePoint Framework (SPFx) is a extensibility model for Microsoft Viva, Microsoft Teams and SharePoint. It&#39;s the easiest way to extend Microsoft 365 with automatic Single Sign On, automatic hosting and industry standard tooling.
-          </p>
-          <h4>Learn more about SPFx development:</h4>
-          <ul className={styles.links}>
-            <li><a href="https://aka.ms/spfx" target="_blank" rel="noreferrer">SharePoint Framework Overview</a></li>
-            <li><a href="https://aka.ms/spfx-yeoman-graph" target="_blank" rel="noreferrer">Use Microsoft Graph in your solution</a></li>
-            <li><a href="https://aka.ms/spfx-yeoman-teams" target="_blank" rel="noreferrer">Build for Microsoft Teams using SharePoint Framework</a></li>
-            <li><a href="https://aka.ms/spfx-yeoman-viva" target="_blank" rel="noreferrer">Build for Microsoft Viva Connections using SharePoint Framework</a></li>
-            <li><a href="https://aka.ms/spfx-yeoman-store" target="_blank" rel="noreferrer">Publish SharePoint Framework applications to the marketplace</a></li>
-            <li><a href="https://aka.ms/spfx-yeoman-api" target="_blank" rel="noreferrer">SharePoint Framework API reference</a></li>
-            <li><a href="https://aka.ms/m365pnp" target="_blank" rel="noreferrer">Microsoft 365 Developer Community</a></li>
-          </ul>
-        </div>
-      </section>
+      </div>
     );
   }
 }
