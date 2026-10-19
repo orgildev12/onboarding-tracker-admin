@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "onboarding-tracker-webpart-client-side-solution",
+    "id": "934fbaf7-cbbc-4d1f-8347-defefb3b94b5",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.23.2"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "onboarding-tracker-webpart description"
+      },
+      "longDescription": {
+        "default": "onboarding-tracker-webpart description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "onboarding-tracker-webpart Feature",
+        "description": "The feature that activates elements of the onboarding-tracker-webpart solution.",
+        "id": "6e3123e6-5ac8-4f16-8448-bbecca30a8e6",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/onboarding-tracker-webpart.sppkg"
+  }
+}

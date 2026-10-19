@@ -1,0 +1,19 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "useGulp": false,
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.23.3",
+    "sdksVersions": {},
+    "version": "1.23.2",
+    "libraryName": "onboarding-tracker-webpart",
+    "libraryId": "934fbaf7-cbbc-4d1f-8347-defefb3b94b5",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "onboarding-tracker-webpart",
+    "solutionShortDescription": "onboarding-tracker-webpart description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}
