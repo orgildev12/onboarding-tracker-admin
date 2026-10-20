@@ -78,6 +78,16 @@ export class ListService {
     );
   }
 
+  // CREATE and return the new item's id (needed when child rows must reference it)
+  public async createItemWithId(fields: ListItem): Promise<number> {
+    const options: ISPHttpClientOptions = { headers: JSON_HEADERS, body: JSON.stringify(fields) };
+    const response = await this.ensureOk(
+      await this.client.post(`${this.listUrl}/items`, SPHttpClient.configurations.v1, options)
+    );
+    const json: { Id?: number; ID?: number } = await response.json();
+    return Number(json.Id ?? json.ID);
+  }
+
   // UPDATE: only the supplied fields are changed (MERGE)
   public async updateItem(id: number, fields: ListItem): Promise<void> {
     const options: ISPHttpClientOptions = {
