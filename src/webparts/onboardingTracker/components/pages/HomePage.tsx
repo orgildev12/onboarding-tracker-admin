@@ -14,7 +14,7 @@ export default function HomePage({ onSelectEmployee }: { onSelectEmployee: (empl
   return (
     <div className="tw-flex tw-flex-col tw-gap-5 tw-p-5 tw-min-h-full tw-bg-surface">
       <div className="tw-flex tw-gap-4">
-        <QuickLinkCard iconName="History" label="Түүхээ" />
+        <QuickLinkCard iconName="History" label="Түүх" />
         <QuickLinkCard iconName="Permissions" label="Хариуцагчийн тохиргоо" />
       </div>
 
