@@ -119,3 +119,98 @@
 .actions {
   white-space: nowrap;
 }
+
+.taskGroup {
+  margin: 12px 0;
+  border: 1px solid #d1d5db;
+  background: #fff;
+}
+
+.taskGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.groupTitle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  background: transparent;
+  font-weight: 600;
+  text-align: left;
+}
+
+.taskTable {
+  min-width: 1000px;
+
+  tbody tr {
+    cursor: pointer;
+  }
+}
+
+.dragHandle {
+  width: 32px;
+  color: #8a8886;
+  cursor: grab;
+  text-align: center !important;
+}
+
+.draggingRow {
+  opacity: 0.45;
+}
+
+.groupFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+
+  span {
+    color: #605e5c;
+    font-size: 12px;
+  }
+}
+
+.dialogBackdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.dialog {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 20px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+
+  input,
+  select {
+    min-height: 32px;
+    padding: 4px 8px;
+    border: 1px solid #8a8886;
+    border-radius: 2px;
+  }
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}

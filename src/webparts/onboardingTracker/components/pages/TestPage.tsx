@@ -1,44 +1,156 @@
 import * as React from 'react';
 import styles from '../OnboardingTracker.module.scss';
 import type { IOnboardingTrackerProps } from '../IOnboardingTrackerProps';
-import { EDITABLE_TYPES, getChoices } from '../../services/ListService';
 import type { IListField, ListItem } from '../../services/ListService';
+import TaskEditor from './features/test/TaskEditor';
+import TaskGroupEditor from './features/test/TaskGroupEditor';
+import TaskGroupSection from './features/test/TaskGroupSection';
+import type {
+  ITask,
+  ITaskAdminLookups,
+  ITaskDraft,
+  ITaskGroup,
+  ITaskGroupDraft,
+  ITaskOwnerRole
+} from './features/test/TaskAdminTypes';
+import { MAX_TASKS_PER_GROUP, TASK_RESULT_TABLE_BY_TYPE } from './features/test/TaskAdminTypes';
+import {
+  findFieldName,
+  findLookupField,
+  numberValue,
+  readLookupId,
+  readValue,
+  textValue
+} from '../../utils/listFields';
 
-interface IState {
-  fields: IListField[];
-  items: ListItem[];
+interface ITaskAdminData {
+  taskFields: IListField[];
+  groupFields: IListField[];
+  tasks: ITask[];
+  groups: ITaskGroup[];
+  ownerRoles: ITaskOwnerRole[];
+  lookups: ITaskAdminLookups;
+  taskOrderField: string;
+  groupOrderField: string;
+}
+
+interface IState extends ITaskAdminData {
   loading: boolean;
   error: string;
-  // undefined = form closed, 0 = new item, otherwise the id being edited
-  formId: number | undefined;
-  values: Record<string, string | boolean>;
+  taskEditorOpen: boolean;
+  editingTask: ITask | undefined;
+  taskEditorGroupId: number;
+  groupEditorOpen: boolean;
+  editingGroup: ITaskGroup | undefined;
+}
+
+const EMPTY_DATA: ITaskAdminData = {
+  taskFields: [],
+  groupFields: [],
+  tasks: [],
+  groups: [],
+  ownerRoles: [],
+  lookups: { triggerTaskField: 'TriggerTaskID', ownerRoleField: 'TaskOwnerRoleID', taskGroupField: 'TaskGroupID' },
+  taskOrderField: 'TaskOrderInTheGroup',
+  groupOrderField: 'Order'
+};
+
+function mapTask(item: ListItem, lookups: ITaskAdminLookups, taskOrderField: string): ITask {
+  const id = numberValue(item.Id);
+  return {
+    id,
+    title: textValue(item.Title),
+    triggerType: textValue(item.TriggerType),
+    dayShouldBegin: textValue(item.DayShouldBegin),
+    dayShouldEnd: textValue(item.DayShouldEnd),
+    triggerTaskId: readLookupId(item, lookups.triggerTaskField, ['TriggerTaskID', 'TriggerTaskId', 'TriggerTask']),
+    dayShouldTake: textValue(item.DayShouldTake),
+    handlerType: textValue(item.HandlerType),
+    taskOwnerRoleId: readLookupId(item, lookups.ownerRoleField, ['TaskOwnerRoleID', 'TaskOwnerRoleId', 'TaskOwnerRole']),
+    taskType: textValue(item.TaskType),
+    taskFieldTableName: textValue(item.TaskFieldTableName),
+    taskDefaultBodyText: textValue(item.TaskDefaultBodyText),
+    taskGroupId: readLookupId(item, lookups.taskGroupField, ['TaskGroupID', 'TaskGroupId', 'TaskGroup']) || 0,
+    taskOrder: numberValue(readValue(item, [taskOrderField, 'TaskOrderInTheGroup'])),
+    item
+  };
+}
+
+function mapGroup(item: ListItem, orderField: string): ITaskGroup {
+  return {
+    id: numberValue(item.Id),
+    title: textValue(item.Title),
+    order: numberValue(readValue(item, [orderField, 'Order'])),
+    item
+  };
+}
+
+function mapOwnerRole(item: ListItem): ITaskOwnerRole {
+  return { id: numberValue(item.Id), title: textValue(item.Title) };
+}
+
+function compareOrder<T extends { order?: number; taskOrder?: number; id: number }>(a: T, b: T): number {
+  const orderDifference = numberValue(a.order ?? a.taskOrder) - numberValue(b.order ?? b.taskOrder);
+  return orderDifference || a.id - b.id;
 }
 
 export default class TestPage extends React.Component<IOnboardingTrackerProps, IState> {
-  public state: IState = { fields: [], items: [], loading: true, error: '', formId: undefined, values: {} };
+  public state: IState = {
+    ...EMPTY_DATA,
+    loading: true,
+    error: '',
+    taskEditorOpen: false,
+    editingTask: undefined,
+    taskEditorGroupId: 0,
+    groupEditorOpen: false,
+    editingGroup: undefined
+  };
 
   public componentDidMount(): void {
-    this._load().catch(() => undefined);
+    void this._load();
   }
 
   public componentDidUpdate(prev: IOnboardingTrackerProps): void {
-    if (prev.listService !== this.props.listService) {
-      this._load().catch(() => undefined);
+    if (
+      prev.listService !== this.props.listService ||
+      prev.taskGroupsService !== this.props.taskGroupsService ||
+      prev.taskOwnerRolesService !== this.props.taskOwnerRolesService
+    ) {
+      void this._load();
     }
   }
 
-  private get _editableFields(): IListField[] {
-    return this.state.fields.filter(f => EDITABLE_TYPES.indexOf(f.TypeAsString) !== -1);
+  private async _loadData(): Promise<ITaskAdminData> {
+    const [taskFields, groupFields, taskItems, groupItems, ownerRoleItems] = await Promise.all([
+      this.props.listService.getFields(),
+      this.props.taskGroupsService.getFields(),
+      this.props.listService.getItems(),
+      this.props.taskGroupsService.getItems(),
+      this.props.taskOwnerRolesService.getItems()
+    ]);
+    const lookups: ITaskAdminLookups = {
+      triggerTaskField: findLookupField(taskFields, ['TriggerTaskID', 'TriggerTaskId', 'TriggerTask'], 'TriggerTaskID'),
+      ownerRoleField: findLookupField(taskFields, ['TaskOwnerRoleID', 'TaskOwnerRoleId', 'TaskOwnerRole'], 'TaskOwnerRoleID'),
+      taskGroupField: findLookupField(taskFields, ['TaskGroupID', 'TaskGroupId', 'TaskGroup'], 'TaskGroupID')
+    };
+    const taskOrderField = findFieldName(taskFields, ['TaskOrderInTheGroup'], 'TaskOrderInTheGroup');
+    const groupOrderField = findFieldName(groupFields, ['Order'], 'Order');
+    return {
+      taskFields,
+      groupFields,
+      lookups,
+      taskOrderField,
+      groupOrderField,
+      tasks: taskItems.map(item => mapTask(item, lookups, taskOrderField)).sort(compareOrder),
+      groups: groupItems.map(item => mapGroup(item, groupOrderField)).sort(compareOrder),
+      ownerRoles: ownerRoleItems.map(mapOwnerRole).sort((a, b) => a.title.localeCompare(b.title))
+    };
   }
 
   private async _load(): Promise<void> {
     this.setState({ loading: true, error: '' });
     try {
-      const [fields, items] = await Promise.all([
-        this.props.listService.getFields(),
-        this.props.listService.getItems()
-      ]);
-      this.setState({ fields, items });
+      this.setState(await this._loadData());
     } catch (e) {
       this.setState({ error: (e as Error).message });
     } finally {
@@ -48,181 +160,269 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
 
   private async _mutate(action: () => Promise<void>): Promise<void> {
     this.setState({ loading: true, error: '' });
+    let failure: Error | undefined;
     try {
       await action();
-      this.setState({ formId: undefined, values: {} });
     } catch (e) {
-      this.setState({ error: (e as Error).message, loading: false });
-      return;
+      failure = e as Error;
     }
-    await this._load();
+
+    try {
+      this.setState(await this._loadData());
+    } catch (e) {
+      const reloadError = e as Error;
+      failure = failure
+        ? new Error(`${failure.message}\nRefresh also failed: ${reloadError.message}`)
+        : reloadError;
+    }
+    this.setState({ loading: false, error: failure ? failure.message : '' });
+    if (failure) {
+      throw failure;
+    }
   }
 
-  private _openForm(item?: ListItem): void {
-    const values: Record<string, string | boolean> = {};
-    this._editableFields.forEach(f => {
-      const raw = item ? item[f.InternalName] : undefined;
-      if (f.TypeAsString === 'Boolean') {
-        values[f.InternalName] = raw === true;
-      } else if (f.TypeAsString === 'DateTime') {
-        values[f.InternalName] = typeof raw === 'string' ? raw.substring(0, 10) : '';
+  private _groupTasks(groupId: number): ITask[] {
+    return this.state.tasks.filter(task => task.taskGroupId === groupId).sort(compareOrder);
+  }
+
+  private _openNewTask = (group: ITaskGroup): void => {
+    this.setState({ taskEditorOpen: true, editingTask: undefined, taskEditorGroupId: group.id, error: '' });
+  };
+
+  private _openTaskEditor = (task: ITask): void => {
+    this.setState({ taskEditorOpen: true, editingTask: task, taskEditorGroupId: task.taskGroupId, error: '' });
+  };
+
+  private _saveTask = async (draft: ITaskDraft): Promise<void> => {
+    const groupTasks = this._groupTasks(draft.taskGroupId);
+    const existing = this.state.editingTask;
+    const moving = !!existing && existing.taskGroupId !== draft.taskGroupId;
+    if ((!existing || moving) && groupTasks.length >= MAX_TASKS_PER_GROUP) {
+      throw new Error(`A task group cannot contain more than ${MAX_TASKS_PER_GROUP} tasks.`);
+    }
+    if (!draft.title.trim()) {
+      throw new Error('Task title is required.');
+    }
+
+    const taskPayload: ListItem = {
+      Title: draft.title.trim(),
+      TriggerType: draft.triggerType,
+      HandlerType: draft.handlerType,
+      TaskType: draft.handlerType === 'ByTaskOwner' ? draft.taskType : null,
+      TaskFieldTableName: draft.handlerType === 'ByTaskOwner'
+        ? TASK_RESULT_TABLE_BY_TYPE[draft.taskType]
+        : draft.handlerType === 'ByOtherSystem' ? draft.taskFieldTableName.trim() || null : null,
+      TaskDefaultBodyText: draft.taskDefaultBodyText.trim() || null,
+      [this.state.lookups.taskGroupField]: draft.taskGroupId
+    };
+    const numberField = (value: string, label: string): number => {
+      const parsed = Number(value);
+      if (!value.trim() || !Number.isFinite(parsed)) {
+        throw new Error(`${label} must be a number.`);
+      }
+      return parsed;
+    };
+
+    if (draft.triggerType === 'ByDate') {
+      taskPayload.DayShouldBegin = numberField(draft.dayShouldBegin, 'Day should begin');
+      taskPayload.DayShouldEnd = numberField(draft.dayShouldEnd, 'Day should end');
+      taskPayload[this.state.lookups.triggerTaskField] = null;
+      taskPayload.DayShouldTake = null;
+    } else {
+      const triggerTaskId = numberField(draft.triggerTaskId, 'Trigger task');
+      if (triggerTaskId === existing?.id) {
+        throw new Error('A task cannot be triggered by itself.');
+      }
+      taskPayload.DayShouldBegin = null;
+      taskPayload.DayShouldEnd = null;
+      taskPayload[this.state.lookups.triggerTaskField] = triggerTaskId;
+      taskPayload.DayShouldTake = numberField(draft.dayShouldTake, 'Day should take');
+    }
+
+    if (draft.handlerType === 'ByTaskOwner') {
+      taskPayload[this.state.lookups.ownerRoleField] = numberField(draft.taskOwnerRoleId, 'Task owner role');
+    } else {
+      taskPayload[this.state.lookups.ownerRoleField] = null;
+    }
+
+    const newTaskOrder = moving
+      ? Math.max(0, ...groupTasks.map(task => task.taskOrder)) + 1
+      : existing ? existing.taskOrder : Math.max(0, ...groupTasks.map(task => task.taskOrder)) + 1;
+    taskPayload[this.state.taskOrderField] = newTaskOrder;
+
+    await this._mutate(async () => {
+      if (existing) {
+        await this.props.listService.updateItem(existing.id, taskPayload);
       } else {
-        values[f.InternalName] = raw === null || raw === undefined ? '' : String(raw);
+        await this.props.listService.createItem(taskPayload);
+      }
+
+      if (moving) {
+        const remainingSourceTasks = this._groupTasks(existing.taskGroupId).filter(task => task.id !== existing.id);
+        await Promise.all(remainingSourceTasks.map((task, index) =>
+          this.props.listService.updateItem(task.id, { [this.state.taskOrderField]: index + 1 })
+        ));
       }
     });
-    this.setState({ formId: item ? Number(item.Id) : 0, values, error: '' });
-  }
-
-  private _buildPayload(): ListItem | undefined {
-    const payload: ListItem = {};
-    for (const f of this._editableFields) {
-      const value = this.state.values[f.InternalName];
-      if (f.TypeAsString === 'Boolean') {
-        payload[f.InternalName] = value === true;
-        continue;
-      }
-      const text = String(value ?? '').trim();
-      if (!text) {
-        if (f.Required) {
-          this.setState({ error: `"${f.Title}" is required.` });
-          return undefined;
-        }
-        if (f.TypeAsString !== 'Text' && f.TypeAsString !== 'Note') {
-          payload[f.InternalName] = null;
-          continue;
-        }
-      }
-      switch (f.TypeAsString) {
-        case 'Number':
-        case 'Currency':
-        case 'Integer':
-          payload[f.InternalName] = Number(text);
-          break;
-        case 'DateTime':
-          payload[f.InternalName] = new Date(text).toISOString();
-          break;
-        default:
-          payload[f.InternalName] = text;
-      }
-    }
-    return payload;
-  }
-
-  private _save = (): Promise<void> => {
-    const payload = this._buildPayload();
-    if (!payload) {
-      return Promise.resolve();
-    }
-    const { formId } = this.state;
-    return this._mutate(() =>
-      formId === 0
-        ? this.props.listService.createItem(payload)
-        : this.props.listService.updateItem(formId as number, payload)
-    );
+    this.setState({ taskEditorOpen: false, editingTask: undefined });
   };
 
-  private _delete = (item: ListItem): Promise<void> => {
-    if (!window.confirm(`Delete item ${String(item.Id)}? This cannot be undone.`)) {
-      return Promise.resolve();
+  private _deleteTask = (task: ITask): void => {
+    if (!window.confirm(`Delete task "${task.title}"? This cannot be undone.`)) {
+      return;
     }
-    return this._mutate(() => this.props.listService.deleteItem(Number(item.Id)));
+    void this._mutate(async () => {
+      await this.props.listService.deleteItem(task.id);
+      const remaining = this._groupTasks(task.taskGroupId).filter(item => item.id !== task.id);
+      await Promise.all(remaining.map((item, index) =>
+        this.props.listService.updateItem(item.id, { [this.state.taskOrderField]: index + 1 })
+      ));
+    }).catch(() => undefined);
   };
 
-  private _format(item: ListItem, internalName: string): string {
-    // lookup columns come back as <Name>Id
-    const value = item[internalName] ?? item[`${internalName}Id`];
-    if (value === null || value === undefined) {
-      return '';
+  private _reorderTasks = (group: ITaskGroup, sourceId: number, targetId: number): void => {
+    const tasks = this._groupTasks(group.id);
+    const sourceIndex = tasks.findIndex(task => task.id === sourceId);
+    const targetIndex = tasks.findIndex(task => task.id === targetId);
+    if (sourceIndex < 0 || targetIndex < 0) {
+      return;
     }
-    return typeof value === 'object' ? JSON.stringify(value) : String(value);
+    const [moved] = tasks.splice(sourceIndex, 1);
+    tasks.splice(targetIndex, 0, moved);
+    void this._mutate(async () => {
+      await Promise.all(tasks.map((task, index) =>
+        this.props.listService.updateItem(task.id, { [this.state.taskOrderField]: index + 1 })
+      ));
+    }).catch(() => undefined);
+  };
+
+  private _openNewGroup = (): void => {
+    this.setState({ groupEditorOpen: true, editingGroup: undefined, error: '' });
+  };
+
+  private _openGroupEditor = (group: ITaskGroup): void => {
+    this.setState({ groupEditorOpen: true, editingGroup: group, error: '' });
+  };
+
+  private _saveGroup = async (draft: ITaskGroupDraft): Promise<void> => {
+    if (!draft.title.trim()) {
+      throw new Error('Task group title is required.');
+    }
+    const group = this.state.editingGroup;
+    const fields: ListItem = { Title: draft.title.trim() };
+    if (!group) {
+      fields[this.state.groupOrderField] = Math.max(0, ...this.state.groups.map(item => item.order)) + 1;
+    }
+    await this._mutate(() => group
+      ? this.props.taskGroupsService.updateItem(group.id, fields)
+      : this.props.taskGroupsService.createItem(fields));
+    this.setState({ groupEditorOpen: false, editingGroup: undefined });
+  };
+
+  private _moveGroup = (group: ITaskGroup, direction: -1 | 1): void => {
+    const groups = [...this.state.groups];
+    const index = groups.findIndex(item => item.id === group.id);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= groups.length) {
+      return;
+    }
+    [groups[index], groups[target]] = [groups[target], groups[index]];
+    void this._mutate(async () => {
+      await Promise.all(groups.map((item, position) =>
+        item.order === position + 1
+          ? Promise.resolve()
+          : this.props.taskGroupsService.updateItem(item.id, { [this.state.groupOrderField]: position + 1 })
+      ));
+    }).catch(() => undefined);
+  };
+
+  private _deleteGroup = (group: ITaskGroup): void => {
+    if (this._groupTasks(group.id).length > 0) {
+      this.setState({ error: 'Move or delete this group’s tasks before deleting the group.' });
+      return;
+    }
+    if (!window.confirm(`Delete task group "${group.title}"? This cannot be undone.`)) {
+      return;
+    }
+    void this._mutate(() => this.props.taskGroupsService.deleteItem(group.id)).catch(() => undefined);
+  };
+
+  private _taskTitlesById(): Record<number, string> {
+    return this.state.tasks.reduce<Record<number, string>>((result, task) => {
+      result[task.id] = task.title;
+      return result;
+    }, {});
   }
 
-  private _renderInput(f: IListField): React.ReactElement {
-    const { values } = this.state;
-    const set = (v: string | boolean): void =>
-      this.setState({ values: { ...values, [f.InternalName]: v } });
-    const value = values[f.InternalName];
-
-    switch (f.TypeAsString) {
-      case 'Boolean':
-        return <input type="checkbox" checked={value === true} onChange={e => set(e.target.checked)} />;
-      case 'Choice':
-        return (
-          <select value={String(value ?? '')} onChange={e => set(e.target.value)}>
-            <option value="" />
-            {getChoices(f).map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        );
-      case 'Note':
-        return <textarea rows={3} value={String(value ?? '')} onChange={e => set(e.target.value)} />;
-      case 'Number':
-      case 'Currency':
-      case 'Integer':
-        return <input type="number" value={String(value ?? '')} onChange={e => set(e.target.value)} />;
-      case 'DateTime':
-        return <input type="date" value={String(value ?? '')} onChange={e => set(e.target.value)} />;
-      default:
-        return <input type="text" value={String(value ?? '')} onChange={e => set(e.target.value)} />;
-    }
+  private _ownerRoleTitlesById(): Record<number, string> {
+    return this.state.ownerRoles.reduce<Record<number, string>>((result, role) => {
+      result[role.id] = role.title;
+      return result;
+    }, {});
   }
 
   public render(): React.ReactElement<IOnboardingTrackerProps> {
-    const { listName } = this.props;
-    const { fields, items, loading, error, formId } = this.state;
+    const { groups, tasks, ownerRoles, loading, error, taskEditorOpen, editingTask, taskEditorGroupId,
+      groupEditorOpen, editingGroup } = this.state;
+    const taskTitlesById = this._taskTitlesById();
+    const ownerRoleTitlesById = this._ownerRoleTitlesById();
+    const taskEditorGroup = groups.find(group => group.id === taskEditorGroupId);
 
     return (
       <section className={styles.page}>
         <div className={styles.header}>
-          <h3>{listName} ({items.length} items)</h3>
+          <h2>Tasks</h2>
           <div>
-            <button disabled={loading} onClick={() => this._openForm()}>New item</button>
-            <button disabled={loading} onClick={() => { this._load().catch(() => undefined); }}>Refresh</button>
+            <button type="button" disabled={loading} onClick={this._openNewGroup}>New task group</button>
+            <button type="button" disabled={loading} onClick={() => { void this._load(); }}>Refresh</button>
           </div>
         </div>
-
-        {error && <p className={styles.error}>{error}</p>}
-
-        {formId !== undefined && (
-          <div className={styles.form}>
-            <h4>{formId === 0 ? 'New item' : `Edit item ${formId}`}</h4>
-            {this._editableFields.map(f => (
-              <label key={f.InternalName} className={styles.field}>
-                <span>{f.Title}{f.Required ? ' *' : ''}</span>
-                {this._renderInput(f)}
-              </label>
-            ))}
-            <div>
-              <button disabled={loading} onClick={() => { this._save().catch(() => undefined); }}>Save</button>
-              <button onClick={() => this.setState({ formId: undefined, values: {} })}>Cancel</button>
-            </div>
+        {error && <p className={styles.error} role="alert">{error}</p>}
+        {loading && <p>Loading...</p>}
+        {!loading && groups.length === 0 && <p>No task groups found. Create a group to begin.</p>}
+        {groups.map((group, index) => (
+          <TaskGroupSection
+            key={group.id}
+            isFirst={index === 0}
+            isLast={index === groups.length - 1}
+            onMoveGroup={this._moveGroup}
+            group={group}
+            tasks={tasks.filter(task => task.taskGroupId === group.id).sort(compareOrder)}
+            taskTitlesById={taskTitlesById}
+            ownerRoleTitlesById={ownerRoleTitlesById}
+            disabled={loading}
+            onCreateTask={this._openNewTask}
+            onEditTask={this._openTaskEditor}
+            onDeleteTask={this._deleteTask}
+            onEditGroup={this._openGroupEditor}
+            onDeleteGroup={this._deleteGroup}
+            onReorder={this._reorderTasks}
+          />
+        ))}
+        {groups.length > 0 && (
+          <div className={styles.groupFooter}>
+            <button type="button" disabled={loading} onClick={this._openNewGroup}>+ New task group</button>
           </div>
         )}
 
-        {loading && <p>Loading...</p>}
-
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th />
-                <th>ID</th>
-                {fields.map(f => <th key={f.InternalName}>{f.Title}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {items.map(item => (
-                <tr key={String(item.Id)}>
-                  <td className={styles.actions}>
-                    <button disabled={loading} onClick={() => this._openForm(item)}>Edit</button>
-                    <button disabled={loading} onClick={() => { this._delete(item).catch(() => undefined); }}>Delete</button>
-                  </td>
-                  <td>{String(item.Id)}</td>
-                  {fields.map(f => <td key={f.InternalName}>{this._format(item, f.InternalName)}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {taskEditorOpen && taskEditorGroup && (
+          <TaskEditor
+            task={editingTask}
+            initialGroupId={taskEditorGroupId}
+            groups={groups}
+            tasks={tasks}
+            ownerRoles={ownerRoles}
+            onSave={this._saveTask}
+            onCancel={() => this.setState({ taskEditorOpen: false, editingTask: undefined })}
+          />
+        )}
+        {groupEditorOpen && (
+          <TaskGroupEditor
+            group={editingGroup}
+            onSave={this._saveGroup}
+            onCancel={() => this.setState({ groupEditorOpen: false, editingGroup: undefined })}
+          />
+        )}
       </section>
     );
   }

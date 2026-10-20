@@ -33,6 +33,11 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
       {
         listName,
         listService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, listName),
+        taskGroupsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'TaskGroups'),
+        taskOwnerRolesService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'TaskOwnerRoles'),
+        jobGroupsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'JobGroups'),
+        jobsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'Jobs'),
+        tasksForJobsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'TasksForJobs'),
         isDarkTheme: this._isDarkTheme,
         userDisplayName: this.context.pageContext.user.displayName
       }
