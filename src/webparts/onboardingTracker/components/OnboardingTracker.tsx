@@ -9,6 +9,7 @@ import SettingsPage from './pages/SettingsPage';
 import HistoryPage from './pages/HistoryPage';
 import TestPage from './pages/TestPage';
 import JobSettingsPage from './pages/JobSettingsPage';
+import NewEmployeesPage from './pages/NewEmployeesPage';
 import type { IEmployee } from '../models/Employee';
 
 interface IState {
@@ -22,6 +23,7 @@ interface IState {
 const NAV_ITEMS: INavItem[] = [
   { key: 'home', title: 'Home', iconName: 'Home' },
   { key: 'history', title: 'History', iconName: 'History' },
+  { key: 'newEmployees', title: 'New employees', iconName: 'AddFriend' },
   { key: 'settings', title: 'Settings', iconName: 'Settings' },
   { key: 'jobSettings', title: 'Job settings', iconName: 'Work' },
   { key: 'test', title: 'Test', iconName: 'TestBeaker' }
@@ -42,6 +44,8 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
           : <HomePage onSelectEmployee={e => this._showEmployee(e, 'home')} />;
       case 'history':
         return <HistoryPage onSelectEmployee={e => this._showEmployee(e, 'history')} />;
+      case 'newEmployees':
+        return <NewEmployeesPage {...this.props} />;
       case 'settings':
         return <SettingsPage />;
       case 'jobSettings':

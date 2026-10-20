@@ -13,6 +13,7 @@ import * as strings from 'OnboardingTrackerWebPartStrings';
 import OnboardingTracker from './components/OnboardingTracker';
 import { IOnboardingTrackerProps } from './components/IOnboardingTrackerProps';
 import { ListService } from './services/ListService';
+import { GraphService } from './services/GraphService';
 import { tailwindStyles } from './tailwind.styles';
 
 loadStyles(tailwindStyles);
@@ -38,6 +39,9 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
         jobGroupsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'JobGroups'),
         jobsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'Jobs'),
         tasksForJobsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'TasksForJobs'),
+        newEmployeesService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'NewEmployee'),
+        anketsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'Ankets'),
+        graphService: new GraphService(this.context.msGraphClientFactory),
         isDarkTheme: this._isDarkTheme,
         userDisplayName: this.context.pageContext.user.displayName
       }

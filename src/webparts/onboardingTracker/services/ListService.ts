@@ -99,6 +99,55 @@ export class ListService {
     );
   }
 
+  // READ: site users (people only), used to pick a Person column value by user id
+  public async getSiteUsers(): Promise<Array<{ Id: number; Title: string; Email: string; LoginName: string }>> {
+    const response = await this.ensureOk(
+      await this.client.get(
+        `${this.webUrl}/_api/web/siteusers?$filter=PrincipalType eq 1&$select=Id,Title,Email,LoginName&$top=5000`,
+        SPHttpClient.configurations.v1,
+        { headers: { Accept: 'application/json;odata=nometadata' } }
+      )
+    );
+    const json: { value: Array<{ Id: number; Title: string; Email: string; LoginName: string }> } = await response.json();
+    return json.value.filter(u => !!u.Title);
+  }
+
+  // Adds the directory user to the site (if missing) and returns the site user id
+  public async ensureUser(loginName: string): Promise<number> {
+    const response = await this.ensureOk(
+      await this.client.post(
+        `${this.webUrl}/_api/web/ensureuser`,
+        SPHttpClient.configurations.v1,
+        { headers: JSON_HEADERS, body: JSON.stringify({ logonName: loginName }) }
+      )
+    );
+    const json: { Id: number } = await response.json();
+    return json.Id;
+  }
+
+  // Uploads a file to a document library folder (server-relative path of the library, e.g. "SiteAssets")
+  // and returns the value to store in a SharePoint Image column.
+  public async uploadImage(libraryUrl: string, file: File): Promise<string> {
+    const fileName = `${Date.now()}-${file.name.replace(/[^\w.\-]/g, '_')}`;
+    const options: ISPHttpClientOptions = { headers: { Accept: 'application/json;odata=nometadata' }, body: file };
+    const response = await this.ensureOk(
+      await this.client.post(
+        `${this.webUrl}/_api/web/GetFolderByServerRelativeUrl('${libraryUrl}')/Files/add(url='${fileName}',overwrite=true)` +
+          '?$select=Name,ServerRelativeUrl,UniqueId',
+        SPHttpClient.configurations.v1,
+        options
+      )
+    );
+    const json: { Name: string; ServerRelativeUrl: string; UniqueId: string } = await response.json();
+    return JSON.stringify({
+      type: 'thumbnail',
+      fileName: json.Name,
+      serverUrl: new URL(this.webUrl).origin,
+      serverRelativeUrl: json.ServerRelativeUrl,
+      id: json.UniqueId
+    });
+  }
+
   // DELETE: permanently removes the item
   public async deleteItem(id: number): Promise<void> {
     const options: ISPHttpClientOptions = {
