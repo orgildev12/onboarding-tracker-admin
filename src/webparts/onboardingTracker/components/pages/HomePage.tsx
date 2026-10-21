@@ -40,7 +40,7 @@ export default function HomePage(props: IHomePageProps): React.ReactElement {
     <div className="tw-flex tw-flex-col tw-gap-5 tw-p-5 tw-min-h-full tw-bg-surface">
       {!isExpanded && (
         <div className="tw-flex tw-gap-4">
-          <QuickLinkCard iconName="ClockLinear" iconClassName="tw-text-[#F15900]" label="Түүх" onClick={() => onNavigate('history')} />
+          <QuickLinkCard fluentIconName="History" iconClassName="tw-text-[#F15900]" iconSizeClassName="tw-text-base" label="Түүх" onClick={() => onNavigate('history')} />
           <QuickLinkCard iconName="EyeLinear" label="Хариуцагчийн тохиргоо" onClick={() => onNavigate('settings')} />
         </div>
       )}
