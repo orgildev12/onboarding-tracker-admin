@@ -4,7 +4,7 @@ import PageIcon from '../common/PageIcon';
 
 export interface IPositionSidebarProps {
   roles: IPositionRole[];
-  selectedRoleId: string;
+  selectedRoleId: number | undefined;
   onSelectRole: (role: IPositionRole) => void;
 }
 

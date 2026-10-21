@@ -9,9 +9,10 @@ export interface IEmployeeTableRowProps {
   employee: IEmployee;
   steps: IProcessStep[];
   gridTemplateColumns: string;
+  onSelectEmployee?: (employee: IEmployee) => void;
 }
 
-export default function EmployeeTableRow({ employee, steps, gridTemplateColumns }: IEmployeeTableRowProps): React.ReactElement {
+export default function EmployeeTableRow({ employee, steps, gridTemplateColumns, onSelectEmployee }: IEmployeeTableRowProps): React.ReactElement {
   const links = getStepLinks(employee.steps);
   return (
     <div className="tw-grid tw-items-center" style={{ gridTemplateColumns }}>
@@ -22,7 +23,13 @@ export default function EmployeeTableRow({ employee, steps, gridTemplateColumns 
         <StatusBadge status={employee.status} />
       </div>
       {steps.map((step, i) => (
-        <StepCell key={step.key} status={employee.steps[i] ?? 'notStarted'} links={links[i] ?? {}} />
+        <StepCell
+          key={step.key}
+          status={employee.steps[i] ?? 'notStarted'}
+          links={links[i] ?? {}}
+          onClick={onSelectEmployee ? () => onSelectEmployee(employee) : undefined}
+          ariaLabel={`Open onboarding process for ${employee.firstName} ${employee.lastName}: ${step.title}`}
+        />
       ))}
     </div>
   );

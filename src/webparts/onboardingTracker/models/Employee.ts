@@ -21,8 +21,13 @@ export interface IEmployee {
   status: ProcessStatus;
   // 0-100
   progress: number;
+  // completed / total tasks the progress is based on
+  tasksDone?: number;
+  tasksTotal?: number;
   hireDate: string;
   probationEndDate: string;
   // one status per IProcessStep, in the same order
   steps: StepStatus[];
+  // "began → ended" text per step, '' when the step has not started
+  stepPeriods?: string[];
 }

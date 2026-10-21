@@ -8,9 +8,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brand: { DEFAULT: '#2B7F86', light: '#D5EAEC' },
-        danger: { DEFAULT: '#B3170B', light: '#FBE3E1' },
-        warn: { DEFAULT: '#F2994A', light: '#FDEBD3' },
+        brand: { DEFAULT: '#297F87', light: '#D5EAEC' },
+        danger: { DEFAULT: '#A10D00', light: '#F4DAD7' },
+        warn: { DEFAULT: '#DE8405', light: '#F8E6CC' },
         surface: '#F4F6FA'
       }
     }

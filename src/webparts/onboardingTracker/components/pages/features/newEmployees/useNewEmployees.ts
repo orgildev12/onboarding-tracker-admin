@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { IOnboardingTrackerProps } from '../../../IOnboardingTrackerProps';
 import type { ListItem } from '../../../../services/ListService';
-import { findFieldName, findLookupField, numberValue, readLookupId, readValue, textValue } from '../../../../utils/listFields';
+import { dateOnly, findFieldName, findLookupField, imageUrl, numberValue, readLookupId, readValue, textValue } from '../../../../utils/listFields';
 import type { IAnketPage, INewEmployeeData, INewEmployeeDraft, INewEmployeeFields, INewEmployeeRecord } from './NewEmployeeTypes';
 import { clampPercent, DEFAULT_NEW_EMPLOYEE_FIELDS, EMPTY_NEW_EMPLOYEE_DATA } from './NewEmployeeTypes';
 
@@ -21,25 +21,6 @@ export interface INewEmployees {
   save: (id: number | undefined, draft: INewEmployeeDraft, original: INewEmployeeRecord | undefined) => Promise<void>;
   remove: (employee: INewEmployeeRecord) => Promise<void>;
 }
-
-// The Image column holds a JSON string like {"serverRelativeUrl":"/sites/x/SiteAssets/a.png",...}
-function imageUrl(value: unknown): string {
-  const text = textValue(value);
-  if (!text) {
-    return '';
-  }
-  try {
-    const parsed = JSON.parse(text) as { serverRelativeUrl?: string; serverUrl?: string };
-    if (parsed.serverRelativeUrl) {
-      return `${parsed.serverUrl || ''}${parsed.serverRelativeUrl}`;
-    }
-  } catch {
-    // plain URL
-  }
-  return text;
-}
-
-const dateOnly = (value: unknown): string => textValue(value).substring(0, 10);
 
 export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
   const { newEmployeesService, anketsService, jobsService } = services;

@@ -11,12 +11,15 @@ import TestPage from './pages/TestPage';
 import JobSettingsPage from './pages/JobSettingsPage';
 import NewEmployeesPage from './pages/NewEmployeesPage';
 import type { IEmployee } from '../models/Employee';
+import PageIcon from './pages/features/common/PageIcon';
 
 interface IState {
   page: string;
   selectedEmployee: IEmployee | undefined;
   // page to return to from the employee process page
   returnPage: 'home' | 'history';
+  // the whole app covers the browser window
+  fullscreen: boolean;
 }
 
 // Pages without a nav item are still reachable by setting `page` (e.g. from a button on another page).
@@ -30,7 +33,11 @@ const NAV_ITEMS: INavItem[] = [
 ];
 
 export default class OnboardingTracker extends React.Component<IOnboardingTrackerProps, IState> {
-  public state: IState = { page: 'home', selectedEmployee: undefined, returnPage: 'home' };
+  public state: IState = { page: 'home', selectedEmployee: undefined, returnPage: 'home', fullscreen: false };
+
+  private _navigate = (page: 'history' | 'settings'): void => {
+    this.setState({ page, selectedEmployee: undefined });
+  };
 
   private _showEmployee = (employee: IEmployee, returnPage: 'home' | 'history'): void => {
     this.setState({ page: 'newEmployeeProcess', selectedEmployee: employee, returnPage });
@@ -40,34 +47,48 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
     switch (this.state.page) {
       case 'newEmployeeProcess':
         return this.state.selectedEmployee
-          ? <NewEmployeeProcessPage employee={this.state.selectedEmployee} onBack={() => this.setState({ page: this.state.returnPage })} />
-          : <HomePage onSelectEmployee={e => this._showEmployee(e, 'home')} />;
+          ? <NewEmployeeProcessPage {...this.props} employee={this.state.selectedEmployee} onBack={() => this.setState({ page: this.state.returnPage })} />
+          : <HomePage {...this.props} onSelectEmployee={e => this._showEmployee(e, 'home')} onNavigate={this._navigate} />;
       case 'history':
         return <HistoryPage onSelectEmployee={e => this._showEmployee(e, 'history')} />;
       case 'newEmployees':
         return <NewEmployeesPage {...this.props} />;
       case 'settings':
-        return <SettingsPage />;
+        return <SettingsPage {...this.props} />;
       case 'jobSettings':
         return <JobSettingsPage {...this.props} />;
       case 'test':
         return <TestPage {...this.props} />;
       default:
-        return <HomePage onSelectEmployee={e => this._showEmployee(e, 'home')} />;
+        return <HomePage {...this.props} onSelectEmployee={e => this._showEmployee(e, 'home')} onNavigate={this._navigate} />;
     }
   }
 
   public render(): React.ReactElement<IOnboardingTrackerProps> {
+    const { fullscreen } = this.state;
     return (
-      <div className={styles.onboardingTracker}>
-        <header className={styles.appHeader}>Onboarding process tracker</header>
-        <div className={styles.workspace}>
+      <div className={`${styles.onboardingTracker}${fullscreen ? ' tw-fixed tw-inset-0 tw-z-[10000] tw-bg-white' : ''}`}>
+        <header className={styles.appHeader}>
+          <span className="tw-flex-1">Onboarding process tracker</span>
+          <button
+            type="button"
+            title={fullscreen ? 'Жижигрүүлэх' : 'Бүтэн дэлгэц'}
+            aria-label={fullscreen ? 'Жижигрүүлэх' : 'Бүтэн дэлгэц'}
+            aria-pressed={fullscreen}
+            onClick={() => this.setState({ fullscreen: !fullscreen })}
+            className="tw-flex tw-h-8 tw-items-center tw-gap-2 tw-rounded tw-border-0 tw-bg-transparent tw-px-3 tw-text-sm tw-font-normal tw-text-gray-800 tw-cursor-pointer hover:tw-bg-gray-100"
+          >
+            <PageIcon name={fullscreen ? 'FullScreenExit' : 'FullScreen'} className="tw-text-lg tw-text-brand" />
+            <span>{fullscreen ? 'Жижигрүүлэх' : 'Бүтэн дэлгэцээр харах'}</span>
+          </button>
+        </header>
+        <div className={`${styles.workspace}${fullscreen ? ' tw-min-h-0 tw-overflow-hidden' : ''}`}>
           <NavBar
             items={NAV_ITEMS}
             selectedKey={this.state.page === 'newEmployeeProcess' ? this.state.returnPage : this.state.page}
             onSelect={page => this.setState({ page, selectedEmployee: undefined })}
           />
-          <main className={styles.content}>{this._renderPage()}</main>
+          <main className={`${styles.content}${fullscreen ? ' tw-overflow-auto' : ''}`}>{this._renderPage()}</main>
         </div>
       </div>
     );

@@ -11,6 +11,11 @@ export interface IOnboardingTrackerProps {
   tasksForJobsService: ListService;
   newEmployeesService: ListService;
   anketsService: ListService;
+  taskGroupProcessService: ListService;
+  taskResultsStatusFieldsService: ListService;
+  roleOwnersService: ListService;
+  // for lists chosen at runtime, e.g. Tasks.TaskFieldTableName
+  createListService: (listName: string) => ListService;
   graphService: GraphService;
   isDarkTheme: boolean;
   userDisplayName: string;

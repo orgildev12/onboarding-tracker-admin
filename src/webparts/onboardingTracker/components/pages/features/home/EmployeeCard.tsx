@@ -29,7 +29,11 @@ export default function EmployeeCard({ employee, onClick }: { employee: IEmploye
         <span>{status.cardLabel}</span>
       </div>
 
-      <ProgressBar value={employee.progress} fillClass={status.progressClass} />
+      <ProgressBar
+        value={employee.progress}
+        fillClass={status.progressClass}
+        fillStyle={{ backgroundColor: employee.status === 'delayed' ? '#A10D00' : '#6B7280' }}
+      />
 
       <div className="tw-flex tw-justify-between tw-text-xs">
         <div>

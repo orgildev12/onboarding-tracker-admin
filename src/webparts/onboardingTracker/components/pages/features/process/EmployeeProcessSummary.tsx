@@ -11,7 +11,6 @@ export interface IEmployeeProcessSummaryProps {
 
 export default function EmployeeProcessSummary({ employee }: IEmployeeProcessSummaryProps): React.ReactElement {
   const status = PROCESS_STATUS_CONFIG[employee.status];
-  const startedSteps = employee.steps.filter(step => step !== 'notStarted').length;
 
   return (
     <section className="tw-grid tw-grid-cols-1 md:tw-grid-cols-[1.4fr_1.2fr_0.8fr_0.7fr] tw-items-center tw-gap-4 tw-p-4 tw-bg-white tw-rounded-lg tw-shadow-sm">
@@ -27,9 +26,9 @@ export default function EmployeeProcessSummary({ employee }: IEmployeeProcessSum
         <div className={`tw-flex tw-items-center tw-gap-1 tw-text-sm ${status.cardTextClass}`}>
           <PageIcon name={status.cardIconName} />
           <span>{status.cardLabel}</span>
-          <span className="tw-ml-auto tw-text-xs tw-text-gray-500">{startedSteps}/{employee.steps.length}</span>
+          <span className="tw-ml-auto tw-text-xs tw-text-gray-500">{employee.tasksDone ?? 0}/{employee.tasksTotal ?? 0}</span>
         </div>
-        <ProgressBar value={employee.progress} fillClass={status.progressClass} />
+        <ProgressBar value={employee.progress} fillClass={status.progressClass} fillStyle={status.processProgressStyle} />
       </div>
 
       <div className="tw-text-center tw-text-sm">

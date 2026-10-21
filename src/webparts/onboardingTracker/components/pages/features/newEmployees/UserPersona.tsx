@@ -7,9 +7,10 @@ export interface IUserPersonaProps {
   name: string;
   email: string;
   size?: PersonaSize;
+  secondaryText?: string;
 }
 
-export default function UserPersona({ graph, name, email, size }: IUserPersonaProps): React.ReactElement {
+export default function UserPersona({ graph, name, email, size, secondaryText }: IUserPersonaProps): React.ReactElement {
   const [photo, setPhoto] = React.useState('');
 
   React.useEffect(() => {
@@ -18,5 +19,5 @@ export default function UserPersona({ graph, name, email, size }: IUserPersonaPr
     return () => { active = false; };
   }, [graph, email]);
 
-  return <Persona text={name} imageUrl={photo || undefined} size={size || PersonaSize.size24} />;
+  return <Persona text={name} secondaryText={secondaryText} imageUrl={photo || undefined} size={size || PersonaSize.size24} />;
 }

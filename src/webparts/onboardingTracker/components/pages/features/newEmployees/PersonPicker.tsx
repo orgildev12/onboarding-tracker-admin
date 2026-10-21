@@ -14,12 +14,13 @@ export interface IPersonPickerProps {
   selectedId: number | undefined;
   onChange: (id: number | undefined) => void;
   onError: (message: string) => void;
+  ariaLabel?: string;
 }
 
 // Persona keeps the login name in `id` so it can be resolved to a site user id after picking.
 const LOGIN_PREFIX = 'login:';
 
-export default function PersonPicker({ service, graph, users, selectedId, onChange, onError }: IPersonPickerProps): React.ReactElement {
+export default function PersonPicker({ service, graph, users, selectedId, onChange, onError, ariaLabel }: IPersonPickerProps): React.ReactElement {
   const [selected, setSelected] = React.useState<IPersonaProps[]>(() => {
     const user = users.filter(u => u.id === selectedId)[0];
     return user ? [{ text: user.title, secondaryText: user.email }] : [];
@@ -92,7 +93,7 @@ export default function PersonPicker({ service, graph, users, selectedId, onChan
         loadingText: 'Хайж байна...',
         suggestionsHeaderText: 'Ажилтнууд'
       }}
-      inputProps={{ placeholder: 'Нэр эсвэл и-мэйлээр хайх...', 'aria-label': 'Шууд удирдлага' }}
+      inputProps={{ placeholder: 'Нэр эсвэл и-мэйлээр хайх...', 'aria-label': ariaLabel || 'Шууд удирдлага' }}
       styles={{ root: { minWidth: 0 } }}
       removeButtonAriaLabel="Хасах"
     />

@@ -58,10 +58,15 @@ export class ListService {
   }
 
   // READ: items of the list
-  public async getItems(top: number = 500): Promise<ListItem[]> {
+  // `filter` is an OData $filter expression, e.g. "NewEmployeeId eq 5".
+  // `personFields` are Person columns whose Title/EMail are returned inline as item[field] = { Id, Title, EMail }.
+  public async getItems(top: number = 500, filter?: string, personFields: string[] = []): Promise<ListItem[]> {
+    const expand = personFields.length > 0
+      ? `&$expand=${personFields.join(',')}&$select=*,${personFields.map(f => `${f}/Id,${f}/Title,${f}/EMail`).join(',')}`
+      : '';
     const response = await this.ensureOk(
       await this.client.get(
-        `${this.listUrl}/items?$orderby=Id&$top=${top}`,
+        `${this.listUrl}/items?$orderby=Id&$top=${top}${filter ? `&$filter=${encodeURIComponent(filter)}` : ''}${expand}`,
         SPHttpClient.configurations.v1,
         { headers: { Accept: 'application/json;odata=nometadata' } }
       )

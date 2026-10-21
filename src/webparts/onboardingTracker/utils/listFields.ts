@@ -18,6 +18,25 @@ export function textValue(value: unknown): string {
   return value === null || value === undefined ? '' : String(value);
 }
 
+export const dateOnly = (value: unknown): string => textValue(value).substring(0, 10);
+
+// The Image column holds a JSON string like {"serverRelativeUrl":"/sites/x/SiteAssets/a.png",...}
+export function imageUrl(value: unknown): string {
+  const text = textValue(value);
+  if (!text) {
+    return '';
+  }
+  try {
+    const parsed = JSON.parse(text) as { serverRelativeUrl?: string; serverUrl?: string };
+    if (parsed.serverRelativeUrl) {
+      return `${parsed.serverUrl || ''}${parsed.serverRelativeUrl}`;
+    }
+  } catch {
+    // plain URL
+  }
+  return text;
+}
+
 export function booleanValue(value: unknown): boolean {
   return value === true || value === 'true' || value === 1;
 }

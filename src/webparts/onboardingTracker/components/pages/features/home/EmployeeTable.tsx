@@ -5,9 +5,10 @@ import EmployeeTableRow from './EmployeeTableRow';
 export interface IEmployeeTableProps {
   employees: IEmployee[];
   steps: IProcessStep[];
+  onSelectEmployee?: (employee: IEmployee) => void;
 }
 
-export default function EmployeeTable({ employees, steps }: IEmployeeTableProps): React.ReactElement {
+export default function EmployeeTable({ employees, steps, onSelectEmployee }: IEmployeeTableProps): React.ReactElement {
   const gridTemplateColumns = `220px 140px repeat(${steps.length}, 150px)`;
 
   return (
@@ -23,7 +24,7 @@ export default function EmployeeTable({ employees, steps }: IEmployeeTableProps)
           ))}
         </div>
         {employees.map(employee => (
-          <EmployeeTableRow key={employee.id} employee={employee} steps={steps} gridTemplateColumns={gridTemplateColumns} />
+          <EmployeeTableRow key={employee.id} employee={employee} steps={steps} gridTemplateColumns={gridTemplateColumns} onSelectEmployee={onSelectEmployee} />
         ))}
       </div>
     </div>

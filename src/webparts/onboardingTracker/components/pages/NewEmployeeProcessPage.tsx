@@ -1,17 +1,22 @@
 import * as React from 'react';
 import type { IEmployee } from '../../models/Employee';
-import { DUMMY_STEPS } from '../../data/dummyEmployees';
-import { DUMMY_PROCESS_TASKS } from '../../data/dummyProcessTasks';
+import type { IOnboardingTrackerProps } from '../IOnboardingTrackerProps';
+import styles from '../OnboardingTracker.module.scss';
 import PageIcon from './features/common/PageIcon';
 import EmployeeProcessSummary from './features/process/EmployeeProcessSummary';
 import ProcessTimeline from './features/process/ProcessTimeline';
+import { useOnboardingData } from './features/process/useOnboardingData';
 
-export interface INewEmployeeProcessPageProps {
+export interface INewEmployeeProcessPageProps extends IOnboardingTrackerProps {
   employee: IEmployee;
   onBack: () => void;
 }
 
-export default function NewEmployeeProcessPage({ employee, onBack }: INewEmployeeProcessPageProps): React.ReactElement {
+export default function NewEmployeeProcessPage(props: INewEmployeeProcessPageProps): React.ReactElement {
+  const { onBack, createListService } = props;
+  const { data, loading, error } = useOnboardingData(props, props.employee.id);
+  const employee = data.employees.filter(e => e.id === props.employee.id)[0];
+
   return (
     <div className="tw-flex tw-flex-col tw-gap-4 tw-bg-surface tw-p-4 tw-min-h-full">
       <div className="tw-flex tw-items-center tw-gap-3">
@@ -26,13 +31,21 @@ export default function NewEmployeeProcessPage({ employee, onBack }: INewEmploye
         <h1 className="tw-m-0 tw-text-lg tw-font-semibold">Onboarding process tracker</h1>
       </div>
 
-      <EmployeeProcessSummary employee={employee} />
+      {error && <p className={styles.error} role="alert">{error}</p>}
+      {loading && <p className="tw-text-sm tw-text-gray-500">Ачаалж байна...</p>}
 
-      <ProcessTimeline
-        employee={employee}
-        steps={DUMMY_STEPS}
-        tasksByStep={{ relations: DUMMY_PROCESS_TASKS }}
-      />
-    </div>
+      {employee && (
+        <>
+          <EmployeeProcessSummary employee={employee} />
+
+          <ProcessTimeline
+            employee={employee}
+            steps={data.steps}
+            tasksByStep={data.tasksByEmployee[employee.id] || {}}
+            createListService={createListService}
+            graph={props.graphService}
+          />
+        </>
+      )}    </div>
   );
 }
