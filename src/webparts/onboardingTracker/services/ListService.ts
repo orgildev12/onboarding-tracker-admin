@@ -100,6 +100,26 @@ export class ListService {
     return result;
   }
 
+  // READ: one page of items, for server-side paging. Pass the returned `nextUrl` back as `pageUrl`
+  // to get the following page (SharePoint only offers "next"; keep earlier urls to go back).
+  // `orderBy` is an OData $orderby, e.g. "Id desc"; `select` limits the returned columns.
+  public async getPage(
+    pageSize: number,
+    filter?: string,
+    select: string[] = [],
+    orderBy: string = 'Id',
+    pageUrl?: string
+  ): Promise<{ items: ListItem[]; nextUrl: string | undefined }> {
+    const url = pageUrl ||
+      `${this.listUrl}/items?$orderby=${encodeURIComponent(orderBy)}&$top=${Math.max(1, Math.min(pageSize, 5000))}` +
+      `${select.length > 0 ? `&$select=${select.join(',')}` : ''}${filter ? `&$filter=${encodeURIComponent(filter)}` : ''}`;
+    const response = await this.ensureOk(
+      await this.client.get(url, SPHttpClient.configurations.v1, { headers: { Accept: 'application/json;odata=nometadata' } })
+    );
+    const json: { value: ListItem[]; 'odata.nextLink'?: string } = await response.json();
+    return { items: json.value, nextUrl: json['odata.nextLink'] };
+  }
+
   // CREATE: fields use internal column names, e.g. { Title: 'abc' }
   public async createItem(fields: ListItem): Promise<void> {
     const options: ISPHttpClientOptions = { headers: JSON_HEADERS, body: JSON.stringify(fields) };
