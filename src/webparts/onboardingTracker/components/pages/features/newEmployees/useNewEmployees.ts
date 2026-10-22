@@ -31,9 +31,9 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
 
   const fetchData = React.useCallback(async (): Promise<INewEmployeeData> => {
     const [employeeItems, employeeFields, anketItems, anketFields, jobItems, users] = await Promise.all([
-      newEmployeesService.getItems(),
+      newEmployeesService.getAllItems(),
       newEmployeesService.getFields(),
-      anketsService.getItems(),
+      anketsService.getAllItems(),
       anketsService.getFields(),
       jobsService.getItems(),
       newEmployeesService.getSiteUsers()

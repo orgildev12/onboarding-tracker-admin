@@ -5,7 +5,10 @@ import type { HistoryFilter, IHistoryEmployee } from '../../models/HistoryEmploy
 import { filterHistory } from '../../utils/historyFilter';
 import HistoryCardGrid from './features/history/HistoryCardGrid';
 import HistoryHeader from './features/history/HistoryHeader';
+import HistoryPagination from './features/history/HistoryPagination';
 import { useOnboardingData } from './features/process/useOnboardingData';
+
+const PAGE_SIZE = 30;
 
 export interface IHistoryPageProps extends IOnboardingTrackerProps {
   onSelectEmployee: (employee: IHistoryEmployee) => void;
@@ -27,7 +30,13 @@ export default function HistoryPage(props: IHistoryPageProps): React.ReactElemen
       confirmedDate: passed ? employee.probationEndDate : undefined
     };
   }), [data.employees]);
-  const employees = filterHistory(history, query, filter);
+  const filtered = filterHistory(history, query, filter);
+  const [page, setPage] = React.useState(1);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const employees = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  React.useEffect(() => { setPage(1); }, [query, filter]);
 
   return (
     <div className="tw-flex tw-flex-col tw-gap-8 tw-p-5 md:tw-p-8 tw-min-h-full tw-bg-surface">
@@ -41,6 +50,15 @@ export default function HistoryPage(props: IHistoryPageProps): React.ReactElemen
       {error && <p className={styles.error} role="alert">{error}</p>}
       {loading && <p className="tw-text-sm tw-text-gray-500">Ачаалж байна...</p>}
       {!loading && !error && <HistoryCardGrid employees={employees} onSelectEmployee={onSelectEmployee} />}
+      {!loading && !error && (
+        <HistoryPagination
+          page={currentPage}
+          pageCount={pageCount}
+          total={filtered.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   );
 }

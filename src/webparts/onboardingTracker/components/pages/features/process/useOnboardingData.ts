@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { IOnboardingTrackerProps } from '../../../IOnboardingTrackerProps';
 import type { IEmployee, IProcessStep, ProcessStatus, StepStatus } from '../../../../models/Employee';
 import type { IProcessPerson, IProcessTask, IProcessTaskTiming, TaskResultKind, TaskStatus } from '../../../../models/OnboardingProcess';
-import type { IListField } from '../../../../services/ListService';
+import type { IListField, ListItem } from '../../../../services/ListService';
 import {
   booleanValue,
   dateOnly,
@@ -158,7 +158,7 @@ async function loadOnboardingData(
     groupItems, groupFields, roleItems, processFields, statusFields, users, roleOwnerFields
   ] = await Promise.all([
     newEmployeesService.getFields(),
-    employeeId === undefined ? newEmployeesService.getItems(5000) : newEmployeesService.getItems(1, `Id eq ${employeeId}`),
+    employeeId === undefined ? newEmployeesService.getAllItems() : newEmployeesService.getItems(1, `Id eq ${employeeId}`),
     jobsService.getItems(),
     jobsService.getFields(),
     tasksForJobsService.getItems(5000),
@@ -176,14 +176,32 @@ async function loadOnboardingData(
 
   const processEmployeeField = findLookupField(processFields, ['NewEmployeeID', 'NewEmployee'], 'NewEmployeeId');
   const statusEmployeeField = findLookupField(statusFields, ['NewEmployeeID', 'NewEmployee'], 'NewEmployeeId');
-  const employeeFilter = (field: string): string | undefined => employeeId === undefined ? undefined : `${field} eq ${employeeId}`;
   const statusOwnerName = findFieldName(statusFields, ['TaskOwnerEmployee'], 'TaskOwnerEmployee');
   const roleOwnerName = findFieldName(roleOwnerFields, ['Employee', 'RoleOwner', 'Owner'], 'Employee');
   const isPerson = (fields: IListField[], name: string): boolean =>
     fields.some(field => field.InternalName === name && field.TypeAsString.indexOf('User') === 0);
+  // Employees to show. IsHistory is compared here (not in the query) so rows where it was never set count as "no".
+  const historyField = findFieldName(employeeFields, ['IsHistory'], 'IsHistory');
+  const visibleItems = employeeId === undefined && isHistory !== undefined
+    ? employeeItems.filter(item => booleanValue(readValue(item, [historyField])) === isHistory)
+    : employeeItems;
+  const visibleIds = visibleItems.map(item => numberValue(item.Id));
+  const statusPersons = isPerson(statusFields, statusOwnerName) ? [statusOwnerName] : [];
+
+  // Status/process rows grow by ~50 per employee, so never read them for "everyone" with a single $top:
+  // - one employee: filter on that employee;
+  // - active employees (home page): one indexed query per visible employee;
+  // - history (or no filter): read every page of the list.
+  const loadPerEmployee = (service: OnboardingServices['taskGroupProcessService'], field: string, persons: string[] = []): Promise<ListItem[]> =>
+    employeeId !== undefined
+      ? service.getAllItems(`${field} eq ${employeeId}`, persons)
+      : isHistory === false
+        ? service.getItemsForIds(field, visibleIds, persons)
+        : service.getAllItems(undefined, persons);
+
   const [processItems, statusItems, roleOwnerItems] = await Promise.all([
-    taskGroupProcessService.getItems(5000, employeeFilter(processEmployeeField)),
-    taskResultsStatusFieldsService.getItems(5000, employeeFilter(statusEmployeeField), isPerson(statusFields, statusOwnerName) ? [statusOwnerName] : []),
+    loadPerEmployee(taskGroupProcessService, processEmployeeField),
+    loadPerEmployee(taskResultsStatusFieldsService, statusEmployeeField, statusPersons),
     roleOwnersService.getItems(5000, undefined, isPerson(roleOwnerFields, roleOwnerName) ? [roleOwnerName] : [])
   ]);
 
@@ -328,11 +346,6 @@ async function loadOnboardingData(
     isHistory: findFieldName(employeeFields, ['IsHistory'], 'IsHistory'),
     hasPassed: findFieldName(employeeFields, ['HasPassed', 'IsPassed'], 'HasPassed')
   };
-
-  // Filtered here (not in the query) so rows where IsHistory was never set count as "no".
-  const visibleItems = employeeId === undefined && isHistory !== undefined
-    ? employeeItems.filter(item => booleanValue(readValue(item, [employeeNameFields.isHistory])) === isHistory)
-    : employeeItems;
 
   const tasksByEmployee: IOnboardingData['tasksByEmployee'] = {};
   const employees: IEmployee[] = visibleItems.map(item => {

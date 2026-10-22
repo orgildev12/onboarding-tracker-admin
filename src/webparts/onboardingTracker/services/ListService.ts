@@ -58,21 +58,46 @@ export class ListService {
   }
 
   // READ: items of the list
-  // `filter` is an OData $filter expression, e.g. "NewEmployeeId eq 5".
+  // `top` is the maximum number of items returned in total; pages of up to 5,000 rows are followed
+  // through odata.nextLink, so large lists are read completely instead of being cut at 5,000.
+  // `filter` is an OData $filter expression, e.g. "NewEmployeeId eq 5". Filter on indexed columns only
+  // (NewEmployeeID, TaskID, IsDone, IsHistory ...), otherwise SharePoint refuses the query on lists over 5,000 rows.
   // `personFields` are Person columns whose Title/EMail are returned inline as item[field] = { Id, Title, EMail }.
   public async getItems(top: number = 500, filter?: string, personFields: string[] = []): Promise<ListItem[]> {
     const expand = personFields.length > 0
       ? `&$expand=${personFields.join(',')}&$select=*,${personFields.map(f => `${f}/Id,${f}/Title,${f}/EMail`).join(',')}`
       : '';
-    const response = await this.ensureOk(
-      await this.client.get(
-        `${this.listUrl}/items?$orderby=Id&$top=${top}${filter ? `&$filter=${encodeURIComponent(filter)}` : ''}${expand}`,
-        SPHttpClient.configurations.v1,
-        { headers: { Accept: 'application/json;odata=nometadata' } }
-      )
-    );
-    const json: { value: ListItem[] } = await response.json();
-    return json.value;
+    const pageSize = Math.max(1, Math.min(top, 5000));
+    let url: string | undefined =
+      `${this.listUrl}/items?$orderby=Id&$top=${pageSize}${filter ? `&$filter=${encodeURIComponent(filter)}` : ''}${expand}`;
+    const items: ListItem[] = [];
+    while (url && items.length < top) {
+      const response = await this.ensureOk(
+        await this.client.get(url, SPHttpClient.configurations.v1, { headers: { Accept: 'application/json;odata=nometadata' } })
+      );
+      const json: { value: ListItem[]; 'odata.nextLink'?: string } = await response.json();
+      items.push(...json.value);
+      url = json['odata.nextLink'];
+    }
+    return items.length > top ? items.slice(0, top) : items;
+  }
+
+  // READ: every item of the list (all pages)
+  public getAllItems(filter?: string, personFields: string[] = []): Promise<ListItem[]> {
+    return this.getItems(Number.MAX_SAFE_INTEGER, filter, personFields);
+  }
+
+  // READ: items whose `field` equals one of `ids`, one small indexed query per id (at most `parallel` at a time).
+  // Used instead of reading a whole large list when only a few employees are needed.
+  public async getItemsForIds(field: string, ids: number[], personFields: string[] = [], parallel: number = 6): Promise<ListItem[]> {
+    const unique = ids.filter((id, i) => ids.indexOf(id) === i);
+    const result: ListItem[] = [];
+    for (let i = 0; i < unique.length; i += parallel) {
+      const chunk = unique.slice(i, i + parallel);
+      const pages = await Promise.all(chunk.map(id => this.getAllItems(`${field} eq ${id}`, personFields)));
+      pages.forEach(page => result.push(...page));
+    }
+    return result;
   }
 
   // CREATE: fields use internal column names, e.g. { Title: 'abc' }
