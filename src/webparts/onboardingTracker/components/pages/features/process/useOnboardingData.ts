@@ -143,7 +143,11 @@ interface IStatusRow {
   delayReason: string;
 }
 
-async function loadOnboardingData(services: OnboardingServices, employeeId: number | undefined): Promise<IOnboardingData> {
+async function loadOnboardingData(
+  services: OnboardingServices,
+  employeeId: number | undefined,
+  isHistory: boolean | undefined
+): Promise<IOnboardingData> {
   const {
     newEmployeesService, jobsService, tasksForJobsService, listService, taskGroupsService,
     taskOwnerRolesService, taskGroupProcessService, taskResultsStatusFieldsService, roleOwnersService
@@ -320,11 +324,18 @@ async function loadOnboardingData(services: OnboardingServices, employeeId: numb
     lastName: findFieldName(employeeFields, ['LastName'], 'LastName'),
     probationStart: findFieldName(employeeFields, ['ProbationStartDate'], 'ProbationStartDate'),
     probationEnd: findFieldName(employeeFields, ['ProbationEndDate'], 'ProbationEndDate'),
-    job: findLookupField(employeeFields, ['JobID', 'Job'], 'JobId')
+    job: findLookupField(employeeFields, ['JobID', 'Job'], 'JobId'),
+    isHistory: findFieldName(employeeFields, ['IsHistory'], 'IsHistory'),
+    hasPassed: findFieldName(employeeFields, ['HasPassed', 'IsPassed'], 'HasPassed')
   };
 
+  // Filtered here (not in the query) so rows where IsHistory was never set count as "no".
+  const visibleItems = employeeId === undefined && isHistory !== undefined
+    ? employeeItems.filter(item => booleanValue(readValue(item, [employeeNameFields.isHistory])) === isHistory)
+    : employeeItems;
+
   const tasksByEmployee: IOnboardingData['tasksByEmployee'] = {};
-  const employees: IEmployee[] = employeeItems.map(item => {
+  const employees: IEmployee[] = visibleItems.map(item => {
     const id = numberValue(item.Id);
     const jobId = readLookupId(item, employeeNameFields.job, ['JobID', 'Job']);
     const rows = statusRowsByEmployee.get(id) || [];
@@ -403,7 +414,8 @@ async function loadOnboardingData(services: OnboardingServices, employeeId: numb
       hireDate: displayDate(readValue(item, [employeeNameFields.probationStart])),
       probationEndDate: displayDate(readValue(item, [employeeNameFields.probationEnd])),
       steps: stepStatuses,
-      stepPeriods: groups.map(group => process?.get(group.id)?.period || '')
+      stepPeriods: groups.map(group => process?.get(group.id)?.period || ''),
+      hasPassed: textValue(readValue(item, [employeeNameFields.hasPassed])).trim()
     };
   });
 
@@ -411,7 +423,8 @@ async function loadOnboardingData(services: OnboardingServices, employeeId: numb
 }
 
 // Loads every new employee, or only `employeeId` (cheaper) when given.
-export function useOnboardingData(services: OnboardingServices, employeeId?: number): IOnboardingState {
+// `isHistory` limits the list to finished (true) or active (false) employees; leave it out for no filtering.
+export function useOnboardingData(services: OnboardingServices, employeeId?: number, isHistory?: boolean): IOnboardingState {
   const {
     newEmployeesService, jobsService, tasksForJobsService, listService, taskGroupsService,
     taskOwnerRolesService, taskGroupProcessService, taskResultsStatusFieldsService, roleOwnersService
@@ -426,14 +439,15 @@ export function useOnboardingData(services: OnboardingServices, employeeId?: num
         newEmployeesService, jobsService, tasksForJobsService, listService, taskGroupsService,
         taskOwnerRolesService, taskGroupProcessService, taskResultsStatusFieldsService, roleOwnersService
       },
-      employeeId
+      employeeId,
+      isHistory
     )
       .then(data => { if (!cancelled) { setState({ data, loading: false, error: '' }); } })
       .catch((e: Error) => { if (!cancelled) { setState({ data: EMPTY_DATA, loading: false, error: e.message }); } });
     return () => { cancelled = true; };
   }, [
     newEmployeesService, jobsService, tasksForJobsService, listService, taskGroupsService,
-    taskOwnerRolesService, taskGroupProcessService, taskResultsStatusFieldsService, roleOwnersService, employeeId
+    taskOwnerRolesService, taskGroupProcessService, taskResultsStatusFieldsService, roleOwnersService, employeeId, isHistory
   ]);
 
   return state;

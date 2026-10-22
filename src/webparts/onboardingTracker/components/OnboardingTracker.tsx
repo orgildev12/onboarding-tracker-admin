@@ -10,6 +10,7 @@ import HistoryPage from './pages/HistoryPage';
 import TestPage from './pages/TestPage';
 import JobSettingsPage from './pages/JobSettingsPage';
 import NewEmployeesPage from './pages/NewEmployeesPage';
+import FormsSetupPage from './pages/FormsSetupPage';
 import type { IEmployee } from '../models/Employee';
 import PageIcon from './pages/features/common/PageIcon';
 
@@ -29,6 +30,7 @@ const NAV_ITEMS: INavItem[] = [
   { key: 'newEmployees', title: 'New employees', iconName: 'AddFriend' },
   { key: 'settings', title: 'Settings', iconName: 'Settings' },
   { key: 'jobSettings', title: 'Job settings', iconName: 'Work' },
+  { key: 'formsSetup', title: 'Forms questions', iconName: 'BulletedList' },
   { key: 'test', title: 'Test', iconName: 'TestBeaker' }
 ];
 
@@ -50,13 +52,15 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
           ? <NewEmployeeProcessPage {...this.props} employee={this.state.selectedEmployee} onBack={() => this.setState({ page: this.state.returnPage })} />
           : <HomePage {...this.props} onSelectEmployee={e => this._showEmployee(e, 'home')} onNavigate={this._navigate} />;
       case 'history':
-        return <HistoryPage onSelectEmployee={e => this._showEmployee(e, 'history')} />;
+        return <HistoryPage {...this.props} onSelectEmployee={e => this._showEmployee(e, 'history')} />;
       case 'newEmployees':
         return <NewEmployeesPage {...this.props} />;
       case 'settings':
         return <SettingsPage {...this.props} />;
       case 'jobSettings':
         return <JobSettingsPage {...this.props} />;
+      case 'formsSetup':
+        return <FormsSetupPage {...this.props} />;
       case 'test':
         return <TestPage {...this.props} />;
       default:

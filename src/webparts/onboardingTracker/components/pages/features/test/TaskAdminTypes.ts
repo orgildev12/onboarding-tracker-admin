@@ -65,7 +65,7 @@ export const TASK_RESULT_TABLE_BY_TYPE: Record<string, string> = {
   Date: 'TaskResultsTypeDate',
   MultipleImages: 'TaskResultsTypeMultipleImages',
   SingleImageWithStatus: 'TaskResultsTypeSingleImageWithStatus',
-  Forms: 'TaskResultsForms'
+  Forms: 'TaskResultsTypeForms'
 };
 
 export const EMPTY_TASK_DRAFT: ITaskDraft = {

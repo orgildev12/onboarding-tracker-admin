@@ -18,7 +18,7 @@ export default function HomePage(props: IHomePageProps): React.ReactElement {
   const { onSelectEmployee, onNavigate } = props;
   const [viewMode, setViewMode] = React.useState<ViewMode>('grid');
   const [expanded, setExpanded] = React.useState(false);
-  const { data, loading, error } = useOnboardingData(props);
+  const { data, loading, error } = useOnboardingData(props, undefined, false);
 
   // only the table can fill the screen
   const isExpanded = expanded && viewMode === 'list';

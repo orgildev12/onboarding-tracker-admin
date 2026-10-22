@@ -30,4 +30,6 @@ export interface IEmployee {
   steps: StepStatus[];
   // "began → ended" text per step, '' when the step has not started
   stepPeriods?: string[];
+  // raw HasPassed choice text of the NewEmployee row
+  hasPassed?: string;
 }

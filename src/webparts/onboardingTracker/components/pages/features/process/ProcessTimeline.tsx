@@ -14,8 +14,8 @@ export interface IProcessTimelineProps {
 }
 
 export default function ProcessTimeline({ employee, steps, tasksByStep, createListService, graph }: IProcessTimelineProps): React.ReactElement {
-  const firstStepWithTasks = steps.filter(step => (tasksByStep[step.key] ?? []).length > 0)[0];
-  const [expandedKey, setExpandedKey] = React.useState<string | undefined>(firstStepWithTasks ? firstStepWithTasks.key : undefined);
+  // all stages start collapsed
+  const [expandedKey, setExpandedKey] = React.useState<string | undefined>(undefined);
 
   return (
     <div className="tw-overflow-hidden tw-rounded-lg tw-shadow-sm">
