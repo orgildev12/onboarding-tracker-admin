@@ -70,8 +70,15 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
 
   public render(): React.ReactElement<IOnboardingTrackerProps> {
     const { fullscreen } = this.state;
+    const { isTeamsHost } = this.props;
     return (
-      <div className={`${styles.onboardingTracker}${fullscreen ? ' tw-fixed tw-inset-0 tw-z-[10000] tw-bg-white' : ''}`}>
+      <div
+        className={
+          `${styles.onboardingTracker}` +
+          `${isTeamsHost ? ` ${styles.fillTeamsViewport}` : ''}` +
+          `${fullscreen ? ' tw-fixed tw-inset-0 tw-z-[10000] tw-bg-white' : ''}`
+        }
+      >
         <header className={styles.appHeader}>
           <span className="tw-flex-1">Onboarding process tracker</span>
           <button

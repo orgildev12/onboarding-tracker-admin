@@ -2,8 +2,17 @@
   display: flex;
   flex-direction: column;
   min-height: 538px;
-  color: "[theme:bodyText, default: #323130]";
-  color: var(--bodyText);
+  background: #fff;
+  // Fixed light-theme color, not derived from the host theme: this app never renders dark.
+  color: #323130;
+}
+
+// Applied only when hosted as a Teams personal app/tab (see isTeamsHost), where this web part is
+// the entire tab content instead of one web part sharing a SharePoint page with others. Without
+// this, our box only grows to fit its content, so Teams' own dark tab background shows through
+// below/around it; stretching it and giving it a solid background covers that completely.
+.fillTeamsViewport {
+  min-height: 100vh;
 }
 
 .appHeader {

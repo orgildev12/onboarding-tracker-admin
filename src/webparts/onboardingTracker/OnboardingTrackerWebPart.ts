@@ -7,7 +7,6 @@ import {
   PropertyPaneTextField
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
-import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 import * as strings from 'OnboardingTrackerWebPartStrings';
 import OnboardingTracker from './components/OnboardingTracker';
@@ -18,35 +17,45 @@ import { tailwindStyles } from './tailwind.styles';
 
 loadStyles(tailwindStyles);
 
+// This web part's lists only ever live on this one site. In Teams (personal app/tab) there is no
+// SharePoint page context, so `pageContext.web.absoluteUrl` resolves to the tenant root site
+// instead of this one; used as the fallback so Teams works without per-install configuration.
+// The `siteUrl` property pane field can still override it if this is ever reused on another site.
+const DEFAULT_SITE_URL = 'https://mstard.sharepoint.com/sites/onboarding';
+
 export interface IOnboardingTrackerWebPartProps {
   listName: string;
+  siteUrl: string;
 }
 
 export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnboardingTrackerWebPartProps> {
 
-  private _isDarkTheme: boolean = false;
   private _environmentMessage: string = '';
 
   public render(): void {
     const listName: string = this.properties.listName || 'Tasks';
+    const webUrl: string = this.properties.siteUrl || DEFAULT_SITE_URL;
+    // Teams (personal app/tab) gives this web part the entire tab area instead of sharing a
+    // SharePoint page with other web parts, so only there should it stretch to fill the viewport.
+    const isTeamsHost: boolean = !!this.context.sdks.microsoftTeams;
     const element: React.ReactElement<IOnboardingTrackerProps> = React.createElement(
       OnboardingTracker,
       {
         listName,
-        listService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, listName),
-        taskGroupsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'TaskGroups'),
-        taskOwnerRolesService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'TaskOwnerRoles'),
-        jobGroupsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'JobGroups'),
-        jobsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'Jobs'),
-        tasksForJobsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'TasksForJobs'),
-        newEmployeesService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'NewEmployee'),
-        anketsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'Ankets'),
-        taskGroupProcessService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'TaskGroupProcess'),
-        taskResultsStatusFieldsService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'TaskResultsStatusFields'),
-        roleOwnersService: new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, 'RoleOwners'),
-        createListService: (name: string) => new ListService(this.context.spHttpClient, this.context.pageContext.web.absoluteUrl, name),
+        isTeamsHost,
+        listService: new ListService(this.context.spHttpClient, webUrl, listName),
+        taskGroupsService: new ListService(this.context.spHttpClient, webUrl, 'TaskGroups'),
+        taskOwnerRolesService: new ListService(this.context.spHttpClient, webUrl, 'TaskOwnerRoles'),
+        jobGroupsService: new ListService(this.context.spHttpClient, webUrl, 'JobGroups'),
+        jobsService: new ListService(this.context.spHttpClient, webUrl, 'Jobs'),
+        tasksForJobsService: new ListService(this.context.spHttpClient, webUrl, 'TasksForJobs'),
+        newEmployeesService: new ListService(this.context.spHttpClient, webUrl, 'NewEmployee'),
+        anketsService: new ListService(this.context.spHttpClient, webUrl, 'Ankets'),
+        taskGroupProcessService: new ListService(this.context.spHttpClient, webUrl, 'TaskGroupProcess'),
+        taskResultsStatusFieldsService: new ListService(this.context.spHttpClient, webUrl, 'TaskResultsStatusFields'),
+        roleOwnersService: new ListService(this.context.spHttpClient, webUrl, 'RoleOwners'),
+        createListService: (name: string) => new ListService(this.context.spHttpClient, webUrl, name),
         graphService: new GraphService(this.context.msGraphClientFactory),
-        isDarkTheme: this._isDarkTheme,
         userDisplayName: this.context.pageContext.user.displayName
       }
     );
@@ -89,23 +98,8 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
     return Promise.resolve(this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment);
   }
 
-  protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
-    if (!currentTheme) {
-      return;
-    }
-
-    this._isDarkTheme = !!currentTheme.isInverted;
-    const {
-      semanticColors
-    } = currentTheme;
-
-    if (semanticColors) {
-      this.domElement.style.setProperty('--bodyText', semanticColors.bodyText || null);
-      this.domElement.style.setProperty('--link', semanticColors.link || null);
-      this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered || null);
-    }
-
-  }
+  // No onThemeChanged override: this app always renders light, regardless of the host's
+  // (SharePoint/Teams) theme, so it never adopts a dark theme variant.
 
   protected onDispose(): void {
     ReactDom.unmountComponentAtNode(this.domElement);
@@ -128,6 +122,10 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
               groupFields: [
                 PropertyPaneTextField('listName', {
                   label: strings.ListNameFieldLabel
+                }),
+                PropertyPaneTextField('siteUrl', {
+                  label: strings.SiteUrlFieldLabel,
+                  description: strings.SiteUrlFieldDescription
                 })
               ]
             }

@@ -3,6 +3,8 @@ define([], function() {
     "PropertyPaneDescription": "Description",
     "BasicGroupName": "Group Name",
     "ListNameFieldLabel": "SharePoint list name",
+    "SiteUrlFieldLabel": "SharePoint site URL",
+    "SiteUrlFieldDescription": "Optional. Overrides the default site (https://mstard.sharepoint.com/sites/onboarding), e.g. if this web part is reused on another site.",
     "AppLocalEnvironmentSharePoint": "The app is running on your local environment as SharePoint web part",
     "AppLocalEnvironmentTeams": "The app is running on your local environment as Microsoft Teams app",
     "AppLocalEnvironmentOffice": "The app is running on your local environment in office.com",

@@ -2,6 +2,8 @@ declare interface IOnboardingTrackerWebPartStrings {
   PropertyPaneDescription: string;
   BasicGroupName: string;
   ListNameFieldLabel: string;
+  SiteUrlFieldLabel: string;
+  SiteUrlFieldDescription: string;
   AppLocalEnvironmentSharePoint: string;
   AppLocalEnvironmentTeams: string;
   AppLocalEnvironmentOffice: string;
