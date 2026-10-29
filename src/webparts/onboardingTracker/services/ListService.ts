@@ -58,12 +58,12 @@ export class ListService {
   }
 
   // READ: items of the list
-  // `top` is the maximum number of items returned in total; pages of up to 5,000 rows are followed
+  // `top` is the maximum number of items returned in total (default: all items); pages of up to 5,000 rows are followed
   // through odata.nextLink, so large lists are read completely instead of being cut at 5,000.
   // `filter` is an OData $filter expression, e.g. "NewEmployeeId eq 5". Filter on indexed columns only
   // (NewEmployeeID, TaskID, IsDone, IsHistory ...), otherwise SharePoint refuses the query on lists over 5,000 rows.
   // `personFields` are Person columns whose Title/EMail are returned inline as item[field] = { Id, Title, EMail }.
-  public async getItems(top: number = 500, filter?: string, personFields: string[] = []): Promise<ListItem[]> {
+  public async getItems(top: number = Number.MAX_SAFE_INTEGER, filter?: string, personFields: string[] = []): Promise<ListItem[]> {
     const expand = personFields.length > 0
       ? `&$expand=${personFields.join(',')}&$select=*,${personFields.map(f => `${f}/Id,${f}/Title,${f}/EMail`).join(',')}`
       : '';

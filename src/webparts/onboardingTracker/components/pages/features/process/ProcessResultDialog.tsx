@@ -55,7 +55,7 @@ async function loadResult(task: IProcessTask, createListService: (listName: stri
     case 'forms': {
       const questionService = createListService('FormsQuestions');
       const answerService = createListService('Answers');
-      const [questionItems, answerItems] = await Promise.all([questionService.getItems(5000), answerService.getItems(5000)]);
+      const [questionItems, answerItems] = await Promise.all([questionService.getAllItems(), answerService.getAllItems()]);
       const questions = new Map(questionItems.map(item => [numberValue(item.Id), textValue(item.Question)]));
       const answers = new Map(answerItems.map(item => [numberValue(item.Id), textValue(item.Answer)]));
       const questionField = findLookupField(fields, ['FormsQuestionID', 'FormsQuestion'], 'FormsQuestionId');

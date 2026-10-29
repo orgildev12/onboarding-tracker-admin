@@ -55,7 +55,7 @@ export function useRoleSettings(services: RoleSettingsServices): IRoleSettings {
     const [roleItems, ownerFields, taskItems, taskFields, groupItems, groupFields, users] = await Promise.all([
       taskOwnerRolesService.getItems(),
       roleOwnersService.getFields(),
-      listService.getItems(5000),
+      listService.getAllItems(),
       listService.getFields(),
       taskGroupsService.getItems(),
       taskGroupsService.getFields(),

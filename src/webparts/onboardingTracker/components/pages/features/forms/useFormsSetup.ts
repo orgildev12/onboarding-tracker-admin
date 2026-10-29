@@ -82,7 +82,7 @@ export function useFormsSetup({ listService, createListService }: FormsSetupServ
     let cancelled = false;
     setLoading(true);
     setError('');
-    listService.getItems(5000)
+    listService.getAllItems()
       .then(items => {
         if (cancelled) {
           return;
@@ -99,7 +99,7 @@ export function useFormsSetup({ listService, createListService }: FormsSetupServ
   const loadForm = React.useCallback(async (taskId: number): Promise<IFormDraft> => {
     const r = await resolve();
     const [formItems, questionItems, answerItems] = await Promise.all([
-      r.forms.getItems(5000), r.questions.getItems(5000), r.answers.getItems(5000)
+      r.forms.getAllItems(), r.questions.getAllItems(), r.answers.getAllItems()
     ]);
     const form = formItems.filter(item => readLookupId(item, r.formTask, ['TaskID', 'Task']) === taskId)[0];
     if (!form) {
