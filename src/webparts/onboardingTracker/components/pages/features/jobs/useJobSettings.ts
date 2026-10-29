@@ -15,7 +15,7 @@ import { DEFAULT_JOB_SETTINGS_FIELDS, EMPTY_JOB_SETTINGS, isOwnedBy } from './Jo
 
 type JobSettingsServices = Pick<
   IOnboardingTrackerProps,
-  'listService' | 'taskGroupsService' | 'jobGroupsService' | 'jobsService' | 'tasksForJobsService'
+  'listService' | 'taskGroupsService' | 'jobGroupsService' | 'jobsService' | 'tasksForJobsService' | 'departmentsService'
 >;
 
 export interface IJobSettings {
@@ -23,7 +23,9 @@ export interface IJobSettings {
   loading: boolean;
   error: string;
   reload: () => Promise<void>;
-  saveTitle: (kind: 'group' | 'job', id: number | undefined, title: string, groupId?: number) => Promise<void>;
+  saveTitle: (
+    kind: 'group' | 'job', id: number | undefined, title: string, groupId?: number, departmentId?: number
+  ) => Promise<void>;
   deleteEntry: (kind: 'group' | 'job', id: number) => Promise<void>;
   setJobGroup: (jobId: number, groupId: number | undefined) => Promise<void>;
   saveJobTask: (owner: IJobOwner, draft: IJobTaskDraft, existing: IJobTask | undefined) => Promise<void>;
@@ -35,16 +37,17 @@ const byOrderThenId = (a: { order: number; id: number }, b: { order: number; id:
   a.order - b.order || a.id - b.id;
 
 export function useJobSettings(services: JobSettingsServices): IJobSettings {
-  const { listService, taskGroupsService, jobGroupsService, jobsService, tasksForJobsService } = services;
+  const { listService, taskGroupsService, jobGroupsService, jobsService, tasksForJobsService, departmentsService } = services;
   const [data, setData] = React.useState<IJobSettingsData>(EMPTY_JOB_SETTINGS);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
   const fieldsRef = React.useRef<IJobSettingsFields>(DEFAULT_JOB_SETTINGS_FIELDS);
+  const pendingRef = React.useRef(0);
 
   const fetchData = React.useCallback(async (): Promise<IJobSettingsData> => {
     const [
       jobGroupItems, jobItems, jobFields, linkFields, linkItems,
-      taskItems, taskFields, taskGroupItems, taskGroupFields
+      taskItems, taskFields, taskGroupItems, taskGroupFields, departmentItems, departmentFields
     ] = await Promise.all([
       jobGroupsService.getItems(),
       jobsService.getItems(),
@@ -54,11 +57,14 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
       listService.getItems(),
       listService.getFields(),
       taskGroupsService.getItems(),
-      taskGroupsService.getFields()
+      taskGroupsService.getFields(),
+      departmentsService.getItems(),
+      departmentsService.getFields()
     ]);
 
     const fields: IJobSettingsFields = {
       jobGroupOnJob: findLookupField(jobFields, ['JobGroupID', 'JobGroup'], DEFAULT_JOB_SETTINGS_FIELDS.jobGroupOnJob),
+      department: findLookupField(jobFields, ['DepartmentID', 'Department'], DEFAULT_JOB_SETTINGS_FIELDS.department),
       taskId: findLookupField(linkFields, ['TaskID', 'Task'], DEFAULT_JOB_SETTINGS_FIELDS.taskId),
       jobGroupId: findLookupField(linkFields, ['JobGroupID', 'JobGroup'], DEFAULT_JOB_SETTINGS_FIELDS.jobGroupId),
       jobId: findLookupField(linkFields, ['JobID', 'Job'], DEFAULT_JOB_SETTINGS_FIELDS.jobId),
@@ -68,8 +74,14 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
       hasNewEmployeeInfo: findFieldName(linkFields, ['HasNewEmployeeInfo'], '')
     };
     fieldsRef.current = fields;
-
-    const taskGroupLookup = findLookupField(taskFields, ['TaskGroupID', 'TaskGroup'], 'TaskGroupID');
+    const isGazarField = findFieldName(departmentFields, ['IsGazar'], 'IsGazar');
+    const departmentGazarField = findLookupField(departmentFields, ['GazarID', 'Gazar'], 'GazarID');
+    const departments = departmentItems.map(item => ({
+      id: numberValue(item.Id),
+      title: textValue(item.Title),
+      isGazar: booleanValue(readValue(item, [isGazarField, 'IsGazar'])),
+      gazarId: readLookupId(item, departmentGazarField, ['GazarID', 'Gazar'])
+    }));    const taskGroupLookup = findLookupField(taskFields, ['TaskGroupID', 'TaskGroup'], 'TaskGroupID');
     const taskOrderField = findFieldName(taskFields, ['TaskOrderInTheGroup'], 'TaskOrderInTheGroup');
     const taskGroupOrderField = findFieldName(taskGroupFields, ['Order'], 'Order');
     const taskGroups = taskGroupItems.map(item => ({
@@ -100,8 +112,10 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
       jobs: jobItems.map(item => ({
         id: numberValue(item.Id),
         title: textValue(item.Title),
-        jobGroupId: readLookupId(item, fields.jobGroupOnJob, ['JobGroupID', 'JobGroup'])
+        jobGroupId: readLookupId(item, fields.jobGroupOnJob, ['JobGroupID', 'JobGroup']),
+        departmentId: readLookupId(item, fields.department, ['DepartmentID', 'Department'])
       })),
+      departments,
       catalog,
       jobTasks: linkItems
         .map(item => ({
@@ -116,7 +130,7 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
         }))
         .sort(byOrderThenId)
     };
-  }, [listService, taskGroupsService, jobGroupsService, jobsService, tasksForJobsService]);
+  }, [listService, taskGroupsService, jobGroupsService, jobsService, tasksForJobsService, departmentsService]);
 
   const reload = React.useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -135,22 +149,39 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
   }, [reload]);
 
   // Runs a change, then always reloads. Failures are shown on the page and re-thrown so dialogs can show them too.
-  const mutate = async (action: () => Promise<void>): Promise<void> => {
-    setLoading(true);
+  // With `optimistic`, the page updates at once and syncs with the list in the background.
+  const mutate = async (
+    action: () => Promise<void>,
+    optimistic?: (current: IJobSettingsData) => IJobSettingsData
+  ): Promise<void> => {
+    pendingRef.current++;
     setError('');
+    if (optimistic) {
+      setData(optimistic);
+    } else {
+      setLoading(true);
+    }
     let failure: Error | undefined;
     try {
       await action();
     } catch (e) {
       failure = e as Error;
     }
+    let fresh: IJobSettingsData | undefined;
     try {
-      setData(await fetchData());
+      fresh = await fetchData();
     } catch (e) {
       const reloadError = e as Error;
       failure = failure ? new Error(`${failure.message}\n${reloadError.message}`) : reloadError;
     }
-    setLoading(false);
+    pendingRef.current--;
+    // only the last running change applies the reloaded data, so older reloads can't undo newer edits
+    if (fresh && pendingRef.current === 0) {
+      setData(fresh);
+    }
+    if (!optimistic || pendingRef.current === 0) {
+      setLoading(false);
+    }
     setError(failure ? failure.message : '');
     if (failure) {
       throw failure;
@@ -176,33 +207,47 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
     }
   };
 
-  const saveTitle: IJobSettings['saveTitle'] = (kind, id, title, groupId) => mutate(async () => {
-    const service = kind === 'group' ? jobGroupsService : jobsService;
-    if (id !== undefined) {
-      await service.updateItem(id, { Title: title });
-      return;
+  const saveTitle: IJobSettings['saveTitle'] = (kind, id, title, groupId, departmentId) => {
+    if (kind === 'job' && departmentId === undefined) {
+      return Promise.reject(new Error('Газар (шаардлагатай бол Хэлтэс)-ийг сонгоно уу.'));
     }
-    const fields: ListItem = { Title: title };
-    if (kind === 'job' && groupId !== undefined) {
-      fields[fieldsRef.current.jobGroupOnJob] = groupId;
-    }
-    const newId = await service.createItemWithId(fields);
-    // a job in a job group follows the group's tasks, so only groups and group-less jobs get their own
-    if (kind === 'group' || groupId === undefined) {
-      await seedTasks({ kind, id: newId }, data.catalog.map(task => task.id));
-    }
-  });
+    return mutate(async () => {
+      const service = kind === 'group' ? jobGroupsService : jobsService;
+      const fields: ListItem = { Title: title };
+      if (kind === 'job') {
+        fields[fieldsRef.current.department] = departmentId;
+      }
+      if (id !== undefined) {
+        await service.updateItem(id, fields);
+        return;
+      }
+      if (kind === 'job' && groupId !== undefined) {
+        fields[fieldsRef.current.jobGroupOnJob] = groupId;
+      }
+      const newId = await service.createItemWithId(fields);
+      // a job in a job group follows the group's tasks, so only groups and group-less jobs get their own
+      if (kind === 'group' || groupId === undefined) {
+        await seedTasks({ kind, id: newId }, data.catalog.map(task => task.id));
+      }
+    });
+  };
 
-  const deleteEntry: IJobSettings['deleteEntry'] = (kind, id) => mutate(async () => {
+  const deleteEntry: IJobSettings['deleteEntry'] = (kind, id) => {
     if (kind === 'group' && data.jobs.some(job => job.jobGroupId === id)) {
-      throw new Error('Энэ job group-д ажлын байр хамаарч байна. Эхлээд ажлын байрыг бүлгээс хасна уу.');
+      return Promise.reject(new Error('Энэ job group-д ажлын байр хамаарч байна. Эхлээд ажлын байрыг бүлгээс хасна уу.'));
     }
-    const own = data.jobTasks.filter(task => (kind === 'group' ? task.jobGroupId : task.jobId) === id);
-    for (const task of own) {
-      await tasksForJobsService.deleteItem(task.id);
-    }
-    await (kind === 'group' ? jobGroupsService : jobsService).deleteItem(id);
-  });
+    const isOwn = (task: IJobTask): boolean => (kind === 'group' ? task.jobGroupId : task.jobId) === id;
+    const own = data.jobTasks.filter(isOwn);
+    return mutate(async () => {
+      await Promise.all(own.map(task => tasksForJobsService.deleteItem(task.id)));
+      await (kind === 'group' ? jobGroupsService : jobsService).deleteItem(id);
+    }, current => ({
+      ...current,
+      groups: kind === 'group' ? current.groups.filter(group => group.id !== id) : current.groups,
+      jobs: kind === 'job' ? current.jobs.filter(job => job.id !== id) : current.jobs,
+      jobTasks: current.jobTasks.filter(task => !isOwn(task))
+    }));
+  };
 
   // A job in a job group follows the group's tasks, so its own task rows are erased.
   // A job leaving its group gets the default task list again.
@@ -210,9 +255,7 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
     await jobsService.updateItem(jobId, { [fieldsRef.current.jobGroupOnJob]: groupId === undefined ? null : groupId });
     const own = data.jobTasks.filter(task => task.jobId === jobId);
     if (groupId !== undefined) {
-      for (const task of own) {
-        await tasksForJobsService.deleteItem(task.id);
-      }
+      await Promise.all(own.map(task => tasksForJobsService.deleteItem(task.id)));
     } else if (own.length === 0) {
       await seedTasks({ kind: 'job', id: jobId }, data.catalog.map(task => task.id));
     }
@@ -220,11 +263,10 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
 
   const renumber = async (tasks: IJobTask[]): Promise<void> => {
     const orderField = fieldsRef.current.taskOrder;
-    for (let index = 0; index < tasks.length; index++) {
-      if (tasks[index].order !== index + 1) {
-        await tasksForJobsService.updateItem(tasks[index].id, { [orderField]: index + 1 });
-      }
-    }
+    await Promise.all(tasks
+      .map((task, index) => ({ task, order: index + 1 }))
+      .filter(({ task, order }) => task.order !== order)
+      .map(({ task, order }) => tasksForJobsService.updateItem(task.id, { [orderField]: order })));
   };
 
   const ownerTasks = (owner: IJobOwner): IJobTask[] =>
@@ -255,10 +297,18 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
     await tasksForJobsService.createItem(payload);
   });
 
-  const removeJobTask: IJobSettings['removeJobTask'] = (owner, task) => mutate(async () => {
-    await tasksForJobsService.deleteItem(task.id);
-    await renumber(ownerTasks(owner).filter(item => item.id !== task.id));
-  });
+  const removeJobTask: IJobSettings['removeJobTask'] = (owner, task) => {
+    const remaining = ownerTasks(owner).filter(item => item.id !== task.id);
+    const newOrder = new Map(remaining.map((item, index) => [item.id, index + 1]));
+    return mutate(async () => {
+      await Promise.all([tasksForJobsService.deleteItem(task.id), renumber(remaining)]);
+    }, current => ({
+      ...current,
+      jobTasks: current.jobTasks
+        .filter(item => item.id !== task.id)
+        .map(item => newOrder.has(item.id) ? { ...item, order: newOrder.get(item.id) as number } : item)
+    }));
+  };
 
   const reorderJobTasks: IJobSettings['reorderJobTasks'] = (owner, sourceId, targetId) => mutate(async () => {
     const tasks = ownerTasks(owner);

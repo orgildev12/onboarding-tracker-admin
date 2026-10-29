@@ -11,7 +11,7 @@ import { useJobSettings } from './features/jobs/useJobSettings';
 
 type JobSettingsPageProps = Pick<
   IOnboardingTrackerProps,
-  'listService' | 'taskGroupsService' | 'jobGroupsService' | 'jobsService' | 'tasksForJobsService'
+  'listService' | 'taskGroupsService' | 'jobGroupsService' | 'jobsService' | 'tasksForJobsService' | 'departmentsService'
 >;
 
 interface ITitleDialogState {
@@ -47,11 +47,11 @@ export default function JobSettingsPage(props: JobSettingsPageProps): React.Reac
   const selectedGroup = owner && owner.kind === 'group' ? data.groups.filter(group => group.id === owner.id)[0] : undefined;
   const selectedJob = owner && owner.kind === 'job' ? data.jobs.filter(job => job.id === owner.id)[0] : undefined;
 
-  const saveTitle = async (title: string, groupId: number | undefined): Promise<void> => {
+  const saveTitle = async (title: string, groupId: number | undefined, departmentId: number | undefined): Promise<void> => {
     if (!titleDialog) {
       return;
     }
-    await settings.saveTitle(titleDialog.kind, titleDialog.item ? titleDialog.item.id : undefined, title, groupId);
+    await settings.saveTitle(titleDialog.kind, titleDialog.item ? titleDialog.item.id : undefined, title, groupId, departmentId);
     setTitleDialog(undefined);
   };
 
@@ -100,6 +100,7 @@ export default function JobSettingsPage(props: JobSettingsPageProps): React.Reac
       <JobSidebar
         groups={data.groups}
         jobs={data.jobs}
+        departments={data.departments}
         selectedKind={owner ? owner.kind : undefined}
         selectedId={owner ? owner.id : undefined}
         disabled={loading}
@@ -166,6 +167,10 @@ export default function JobSettingsPage(props: JobSettingsPageProps): React.Reac
           heading={`${titleDialog.kind === 'group' ? 'Job group' : 'Job'} ${titleDialog.item ? 'засах' : 'нэмэх'}`}
           initialTitle={titleDialog.item ? titleDialog.item.title : ''}
           groups={titleDialog.kind === 'job' && !titleDialog.item ? data.groups : undefined}
+          department={titleDialog.kind === 'job' ? {
+            departments: data.departments,
+            initialDepartmentId: titleDialog.item ? (titleDialog.item as IJob).departmentId : undefined
+          } : undefined}
           onSave={saveTitle}
           onDelete={titleDialog.item ? deleteEntry : undefined}
           onCancel={() => setTitleDialog(undefined)}

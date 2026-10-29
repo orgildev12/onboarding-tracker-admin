@@ -66,7 +66,7 @@ export default function JobTaskTable(props: IJobTaskTableProps): React.ReactElem
                   <td className="tw-px-2 tw-py-3">{link.taskId}</td>
                   <td className="tw-px-2 tw-py-3">{task ? task.title : ''}</td>
                   <td className="tw-px-2 tw-py-3">{task ? task.taskGroupTitle : ''}</td>
-                  <td className="tw-px-2 tw-py-3">
+                  <td className="tw-px-2 tw-py-3 tw-max-w-xs tw-break-words">
                     {link.bodyText || (
                       <span className="tw-text-gray-500" title="Default текст">{task ? task.defaultBodyText : ''}</span>
                     )}

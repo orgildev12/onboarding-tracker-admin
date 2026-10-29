@@ -19,7 +19,7 @@ export default function ProcessTimeline({ employee, steps, tasksByStep, createLi
 
   return (
     <div className="tw-overflow-hidden tw-rounded-lg tw-shadow-sm">
-      {steps.map((step, index) => (
+      {steps.map((step, index) => (tasksByStep[step.key] ?? []).length === 0 ? undefined : (
         <ProcessStageAccordion
           key={step.key}
           step={step}

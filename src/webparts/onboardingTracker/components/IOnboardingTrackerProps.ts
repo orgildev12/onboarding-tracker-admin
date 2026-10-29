@@ -11,6 +11,7 @@ export interface IOnboardingTrackerProps {
   taskOwnerRolesService: ListService;
   jobGroupsService: ListService;
   jobsService: ListService;
+  departmentsService: ListService;
   tasksForJobsService: ListService;
   newEmployeesService: ListService;
   anketsService: ListService;

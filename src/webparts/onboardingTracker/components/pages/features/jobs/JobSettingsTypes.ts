@@ -7,6 +7,15 @@ export interface IJob {
   id: number;
   title: string;
   jobGroupId: number | undefined;
+  departmentId: number | undefined;
+}
+
+// A row of the Departments list: either a Gazar (isGazar) or a Heltes that belongs to a Gazar (gazarId).
+export interface IDepartment {
+  id: number;
+  title: string;
+  isGazar: boolean;
+  gazarId: number | undefined;
 }
 
 // A task from the Tasks list, used to pick tasks for a job / job group.
@@ -47,10 +56,12 @@ export interface IJobSettingsData {
   jobs: IJob[];
   catalog: ICatalogTask[];
   jobTasks: IJobTask[];
+  departments: IDepartment[];
 }
 
 export interface IJobSettingsFields {
   jobGroupOnJob: string;
+  department: string;
   taskId: string;
   jobGroupId: string;
   jobId: string;
@@ -60,10 +71,13 @@ export interface IJobSettingsFields {
   hasNewEmployeeInfo: string;
 }
 
-export const EMPTY_JOB_SETTINGS: IJobSettingsData = { groups: [], jobs: [], catalog: [], jobTasks: [] };
+export const EMPTY_JOB_SETTINGS: IJobSettingsData = {
+  groups: [], jobs: [], catalog: [], jobTasks: [], departments: []
+};
 
 export const DEFAULT_JOB_SETTINGS_FIELDS: IJobSettingsFields = {
   jobGroupOnJob: 'JobGroupID',
+  department: 'DepartmentID',
   taskId: 'TaskID',
   jobGroupId: 'JobGroupID',
   jobId: 'JobID',
