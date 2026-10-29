@@ -11,8 +11,9 @@ export interface IJobSidebarProps {
   selectedId: number | undefined;
   disabled: boolean;
   onSelect: (kind: 'group' | 'job', id: number) => void;
-  onEdit: (kind: 'group' | 'job', item: IJobGroup | IJob) => void;
-  onAdd: (kind: 'group' | 'job') => void;
+  // without onEdit / onAdd the sidebar is read-only
+  onEdit?: (kind: 'group' | 'job', item: IJobGroup | IJob) => void;
+  onAdd?: (kind: 'group' | 'job') => void;
 }
 
 interface IItemRowProps {
@@ -23,6 +24,7 @@ interface IItemRowProps {
 
 function ItemRow({ kind, item, sidebar }: IItemRowProps): React.ReactElement {
   const selected = sidebar.selectedKind === kind && sidebar.selectedId === item.id;
+  const { onEdit } = sidebar;
   return (
     <div
       className={`tw-flex tw-items-center tw-rounded-lg tw-border tw-border-solid ${
@@ -37,15 +39,17 @@ function ItemRow({ kind, item, sidebar }: IItemRowProps): React.ReactElement {
       >
         {item.title}
       </button>
-      <button
-        type="button"
-        disabled={sidebar.disabled}
-        aria-label={`${item.title} засах`}
-        onClick={() => sidebar.onEdit(kind, item)}
-        className="tw-border-0 tw-bg-transparent tw-px-2 tw-text-xs tw-cursor-pointer"
-      >
-        <span aria-hidden="true">✎</span>
-      </button>
+      {onEdit && (
+        <button
+          type="button"
+          disabled={sidebar.disabled}
+          aria-label={`${item.title} засах`}
+          onClick={() => onEdit(kind, item)}
+          className="tw-border-0 tw-bg-transparent tw-px-2 tw-text-xs tw-cursor-pointer"
+        >
+          <span aria-hidden="true">✎</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -89,6 +93,7 @@ interface ISectionProps {
 }
 
 function Section({ heading, iconName, kind, sidebar, children }: ISectionProps): React.ReactElement {
+  const { onAdd } = sidebar;
   return (
     <div className="tw-border-0 tw-border-b tw-border-solid tw-border-gray-300">
       <div className="tw-flex tw-h-9 tw-items-center tw-gap-2 tw-px-3 tw-text-xs tw-font-medium">
@@ -97,14 +102,16 @@ function Section({ heading, iconName, kind, sidebar, children }: ISectionProps):
       </div>
       <div className="tw-flex tw-flex-col tw-gap-1 tw-px-3 tw-pb-3">
         {children}
-        <button
-          type="button"
-          disabled={sidebar.disabled}
-          onClick={() => sidebar.onAdd(kind)}
-          className="tw-min-h-7 tw-rounded-lg tw-border tw-border-solid tw-border-gray-400 tw-bg-white tw-text-xs tw-cursor-pointer"
-        >
-          + Нэмэх
-        </button>
+        {onAdd && (
+          <button
+            type="button"
+            disabled={sidebar.disabled}
+            onClick={() => onAdd(kind)}
+            className="tw-min-h-7 tw-rounded-lg tw-border tw-border-solid tw-border-gray-400 tw-bg-white tw-text-xs tw-cursor-pointer"
+          >
+            + Нэмэх
+          </button>
+        )}
       </div>
     </div>
   );

@@ -17,11 +17,14 @@ export interface IProcessStageAccordionProps {
   tasks: IProcessTask[];
   createListService: (listName: string) => ListService;
   graph: GraphService;
+  selectedTaskId: number | undefined;
+  relatedTaskIds: Set<number>;
+  onSelectTask: (taskId: number) => void;
   onToggle: () => void;
 }
 
 export default function ProcessStageAccordion(props: IProcessStageAccordionProps): React.ReactElement {
-  const { step, status, period, expanded, tasks, createListService, graph, onToggle } = props;
+  const { step, status, period, expanded, tasks, createListService, graph, selectedTaskId, relatedTaskIds, onSelectTask, onToggle } = props;
   const statusStyle = STEP_STATUS_CONFIG[status];
   const statusLabel = statusStyle.label;
   const isNotStarted = status === 'notStarted';
@@ -30,6 +33,7 @@ export default function ProcessStageAccordion(props: IProcessStageAccordionProps
     <section className="tw-bg-white">
       <button
         type="button"
+        data-group-header={step.key}
         onClick={onToggle}
         aria-expanded={expanded}
         className="tw-grid tw-w-full tw-grid-cols-[minmax(0,1fr)_minmax(180px,0.7fr)_24px] tw-items-center tw-gap-4 tw-border-0 tw-border-b tw-border-gray-200 tw-bg-white tw-px-4 tw-py-2 tw-text-left hover:tw-bg-gray-50"
@@ -49,7 +53,16 @@ export default function ProcessStageAccordion(props: IProcessStageAccordionProps
       </button>
       {expanded && (
         tasks.length > 0
-          ? <ProcessTaskTable tasks={tasks} createListService={createListService} graph={graph} />
+          ? (
+            <ProcessTaskTable
+              tasks={tasks}
+              createListService={createListService}
+              graph={graph}
+              selectedTaskId={selectedTaskId}
+              relatedTaskIds={relatedTaskIds}
+              onSelectTask={onSelectTask}
+            />
+          )
           : <div className="tw-border-b tw-border-gray-200 tw-p-4 tw-pl-12 tw-text-sm tw-text-gray-500">Энэ үе шатны ажлын мэдээлэл одоогоор байхгүй.</div>
       )}
     </section>

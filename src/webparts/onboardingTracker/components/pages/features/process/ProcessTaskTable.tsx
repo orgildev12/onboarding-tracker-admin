@@ -4,6 +4,7 @@ import type { IProcessTask, TaskResultKind } from '../../../../models/Onboarding
 import type { ListService } from '../../../../services/ListService';
 import type { GraphService } from '../../../../services/GraphService';
 import UserPersona from '../newEmployees/UserPersona';
+import { triggerRowBackground } from '../common/TriggerLines';
 import ProcessResultDialog from './ProcessResultDialog';
 import TaskStatusPill from './TaskStatusPill';
 
@@ -33,6 +34,9 @@ export interface IProcessTaskTableProps {
   tasks: IProcessTask[];
   createListService: (listName: string) => ListService;
   graph: GraphService;
+  selectedTaskId: number | undefined;
+  relatedTaskIds: Set<number>;
+  onSelectTask: (taskId: number) => void;
 }
 
 // A task that is triggered by the task right above it is joined to it with a chain.
@@ -58,7 +62,7 @@ function ChainLinks({ rows }: { rows: number }): React.ReactElement {
   return <>{links}</>;
 }
 
-export default function ProcessTaskTable({ tasks, createListService, graph }: IProcessTaskTableProps): React.ReactElement {
+export default function ProcessTaskTable({ tasks, createListService, graph, selectedTaskId, relatedTaskIds, onSelectTask }: IProcessTaskTableProps): React.ReactElement {
   const [resultTask, setResultTask] = React.useState<IProcessTask | undefined>();
 
   // Number of rows a chain cell must span when row `index` starts a linked run, otherwise 1.
@@ -85,7 +89,7 @@ export default function ProcessTaskTable({ tasks, createListService, graph }: IP
             <col />
           </colgroup>
           <thead>
-            <tr style={{ backgroundColor: 'rgba(241, 89, 0, 0.25)' }}>
+            <tr className="tw-bg-gray-100">
               <th colSpan={2} className={HEADER_CELL}>Ажилууд</th>
               <th className={HEADER_CELL}>Хариуцагч</th>
               <th className={HEADER_CELL}>Төлөв</th>
@@ -95,17 +99,30 @@ export default function ProcessTaskTable({ tasks, createListService, graph }: IP
           <tbody>
             {tasks.map((task, index) => {
               return (
-                <tr key={task.id}>
+                <tr
+                  key={task.id}
+                  data-task-id={task.taskId}
+                  tabIndex={0}
+                  style={{ backgroundColor: triggerRowBackground(task.taskId, selectedTaskId, relatedTaskIds) }}
+                  className="tw-cursor-pointer tw-transition-colors hover:tw-bg-gray-50"
+                  onClick={() => onSelectTask(task.taskId)}
+                  onKeyDown={event => {
+                    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault();
+                      onSelectTask(task.taskId);
+                    }
+                  }}
+                >
                   {!isChainedToPrevious(tasks, index) && (
                     chainRows(index) > 1
                       ? (
-                        <td rowSpan={chainRows(index)} className={`${BODY_CELL} tw-relative tw-overflow-hidden tw-p-0`}>
+                        <td rowSpan={chainRows(index)} className={`${BODY_CELL} tw-relative tw-overflow-hidden tw-bg-white tw-p-0`}>
                           <div aria-hidden="true" className="tw-absolute tw-inset-0 tw-flex tw-flex-col tw-items-center tw-overflow-hidden">
                             <ChainLinks rows={chainRows(index)} />
                           </div>
                         </td>
                       )
-                      : <td className={`${BODY_CELL} tw-p-0`} />
+                      : <td className={`${BODY_CELL} tw-bg-white tw-p-0`} />
                   )}
                   <td className={BODY_CELL}>
                     <label className="tw-flex tw-items-center tw-gap-3">
@@ -134,7 +151,10 @@ export default function ProcessTaskTable({ tasks, createListService, graph }: IP
                       <button
                         type="button"
                         disabled={!task.completed}
-                        onClick={() => setResultTask(task)}
+                        onClick={event => {
+                          event.stopPropagation();
+                          setResultTask(task);
+                        }}
                         className="tw-border tw-border-solid tw-border-brand tw-bg-white tw-px-4 tw-py-2 tw-text-xs tw-text-brand disabled:tw-border-gray-300 disabled:tw-text-gray-400"
                       >
                         {RESULT_LABELS[task.resultKind]}

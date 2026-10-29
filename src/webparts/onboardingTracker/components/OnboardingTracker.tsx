@@ -9,6 +9,7 @@ import SettingsPage from './pages/SettingsPage';
 import HistoryPage from './pages/HistoryPage';
 import TestPage from './pages/TestPage';
 import JobSettingsPage from './pages/JobSettingsPage';
+import JobTaskProcessPage from './pages/JobTaskProcessPage';
 import NewEmployeesPage from './pages/NewEmployeesPage';
 import FormsSetupPage from './pages/FormsSetupPage';
 import type { IEmployee } from '../models/Employee';
@@ -30,6 +31,7 @@ const NAV_ITEMS: INavItem[] = [
   { key: 'newEmployees', title: 'New employees', iconName: 'AddFriend' },
   { key: 'settings', title: 'Settings', iconName: 'Settings' },
   { key: 'jobSettings', title: 'Job settings', iconName: 'Work' },
+  { key: 'jobTaskProcess', title: 'Job tasks', iconName: 'Flow' },
   { key: 'formsSetup', title: 'Forms questions', iconName: 'BulletedList' },
   { key: 'test', title: 'Test', iconName: 'TestBeaker' }
 ];
@@ -59,6 +61,8 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
         return <SettingsPage {...this.props} />;
       case 'jobSettings':
         return <JobSettingsPage {...this.props} />;
+      case 'jobTaskProcess':
+        return <JobTaskProcessPage {...this.props} />;
       case 'formsSetup':
         return <FormsSetupPage {...this.props} />;
       case 'test':
