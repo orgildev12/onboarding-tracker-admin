@@ -20,6 +20,8 @@ export interface IOnboardingTrackerProps {
   roleOwnersService: ListService;
   // one row per user: Employee (Person) + LastLoginDate (Date and Time)
   loginsService: ListService;
+  // Employee (Person) + Role (1 = full access, 2 = limited)
+  userRolesService: ListService;
   // for lists chosen at runtime, e.g. Tasks.TaskFieldTableName
   createListService: (listName: string) => ListService;
   graphService: GraphService;

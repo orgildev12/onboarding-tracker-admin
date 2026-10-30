@@ -14,6 +14,8 @@ import NewEmployeesPage from './pages/NewEmployeesPage';
 import FormsSetupPage from './pages/FormsSetupPage';
 import LoginsPage from './pages/LoginsPage';
 import { recordLogin } from '../services/recordLogin';
+import { getUserRole } from '../services/userRole';
+import type { UserRole } from '../services/userRole';
 import type { IEmployee } from '../models/Employee';
 import PageIcon from './pages/features/common/PageIcon';
 
@@ -24,7 +26,14 @@ interface IState {
   returnPage: 'home' | 'history';
   // the whole app covers the browser window
   fullscreen: boolean;
+  // undefined until the UserRoles list has been read; the restricted menus stay hidden meanwhile
+  role: UserRole | undefined;
+  // always shown in the header so the role check is visible even when no pop-up appears
+  roleLabel: string;
 }
+
+// Pages only role 1 may open.
+const ROLE_1_PAGES: string[] = ['jobSettings', 'formsSetup', 'logins', 'test'];
 
 // Pages without a nav item are still reachable by setting `page` (e.g. from a button on another page).
 const NAV_ITEMS: INavItem[] = [
@@ -40,10 +49,26 @@ const NAV_ITEMS: INavItem[] = [
 ];
 
 export default class OnboardingTracker extends React.Component<IOnboardingTrackerProps, IState> {
-  public state: IState = { page: 'home', selectedEmployee: undefined, returnPage: 'home', fullscreen: false };
+  public state: IState = { page: 'home', selectedEmployee: undefined, returnPage: 'home', fullscreen: false, role: undefined, roleLabel: 'Эрх шалгаж байна...' };
 
   public componentDidMount(): void {
+    console.log('[OnboardingTracker] started, checking role for', this.props.userLoginName);
     recordLogin(this.props.loginsService, this.props.userLoginName).catch(() => undefined);
+    const timeout = new Promise<never>((_resolve, reject) => setTimeout(() => reject(new Error('15 секундэд хариу ирсэнгүй')), 15000));
+    Promise.race([getUserRole(this.props.userRolesService, this.props.userLoginName), timeout])
+      .then(({ role, listed, error, detail }) => {
+        this.setState({ role, roleLabel: error ? 'Эрх: алдаа' : !listed ? 'Эрх: бүртгэлгүй (Role 2)' : `Эрх: Role ${role}` });
+        if (error) {
+          console.error('[OnboardingTracker] role check failed:', error);
+        } else {
+          console.log(`[OnboardingTracker] role = ${role}, listed in UserRoles = ${listed}`);
+          console.log(`[OnboardingTracker] ${detail}`);
+        }
+      })
+      .catch((e: Error) => {
+        this.setState({ role: 2, roleLabel: 'Эрх: алдаа' });
+        console.error('[OnboardingTracker] role check failed:', e.message);
+      });
   }
 
   private _navigate = (page: 'history' | 'settings'): void => {
@@ -55,7 +80,8 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
   };
 
   private _renderPage(): React.ReactElement {
-    switch (this.state.page) {
+    const page = ROLE_1_PAGES.indexOf(this.state.page) !== -1 && this.state.role !== 1 ? 'home' : this.state.page;
+    switch (page) {
       case 'newEmployeeProcess':
         return this.state.selectedEmployee
           ? <NewEmployeeProcessPage {...this.props} employee={this.state.selectedEmployee} onBack={() => this.setState({ page: this.state.returnPage })} />
@@ -94,6 +120,7 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
       >
         <header className={styles.appHeader}>
           <span className="tw-flex-1">Onboarding process tracker</span>
+          <span className="tw-mr-3 tw-text-xs tw-font-normal tw-text-gray-600">{this.state.roleLabel}</span>
           <button
             type="button"
             title={fullscreen ? 'Жижигрүүлэх' : 'Бүтэн дэлгэц'}
@@ -108,7 +135,7 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
         </header>
         <div className={`${styles.workspace}${fullscreen ? ' tw-min-h-0 tw-overflow-hidden' : ''}`}>
           <NavBar
-            items={NAV_ITEMS}
+            items={NAV_ITEMS.filter(item => this.state.role === 1 || ROLE_1_PAGES.indexOf(item.key) === -1)}
             selectedKey={this.state.page === 'newEmployeeProcess' ? this.state.returnPage : this.state.page}
             onSelect={page => this.setState({ page, selectedEmployee: undefined })}
           />

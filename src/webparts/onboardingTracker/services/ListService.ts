@@ -149,6 +149,18 @@ export class ListService {
     );
   }
 
+  // READ: the signed-in user as SharePoint sees them (site user id, e-mail, claims login name)
+  public async getCurrentUser(): Promise<{ Id: number; Title: string; Email: string; LoginName: string }> {
+    const response = await this.ensureOk(
+      await this.client.get(
+        `${this.webUrl}/_api/web/currentuser?$select=Id,Title,Email,LoginName`,
+        SPHttpClient.configurations.v1,
+        { headers: { Accept: 'application/json;odata=nometadata' } }
+      )
+    );
+    return response.json();
+  }
+
   // READ: site users (people only), used to pick a Person column value by user id
   public async getSiteUsers(): Promise<Array<{ Id: number; Title: string; Email: string; LoginName: string }>> {
     const response = await this.ensureOk(
