@@ -18,8 +18,6 @@ import { getUserRole } from '../services/userRole';
 import type { UserRole } from '../services/userRole';
 import type { IEmployee } from '../models/Employee';
 import PageIcon from './pages/features/common/PageIcon';
-import UserPersona from './pages/features/newEmployees/UserPersona';
-import { PersonaSize } from '@fluentui/react/lib/Persona';
 
 interface IState {
   page: string;
@@ -30,8 +28,6 @@ interface IState {
   fullscreen: boolean;
   // undefined until the UserRoles list has been read; the restricted menus stay hidden meanwhile
   role: UserRole | undefined;
-  // always shown in the header so the role check is visible even when no pop-up appears
-  roleLabel: string;
 }
 
 // Pages only role 1 may open.
@@ -51,7 +47,7 @@ const NAV_ITEMS: INavItem[] = [
 ];
 
 export default class OnboardingTracker extends React.Component<IOnboardingTrackerProps, IState> {
-  public state: IState = { page: 'home', selectedEmployee: undefined, returnPage: 'home', fullscreen: false, role: undefined, roleLabel: 'Эрх шалгаж байна...' };
+  public state: IState = { page: 'home', selectedEmployee: undefined, returnPage: 'home', fullscreen: false, role: undefined };
 
   public componentDidMount(): void {
     console.log('[OnboardingTracker] started, checking role for', this.props.userLoginName);
@@ -59,7 +55,7 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
     const timeout = new Promise<never>((_resolve, reject) => setTimeout(() => reject(new Error('15 секундэд хариу ирсэнгүй')), 15000));
     Promise.race([getUserRole(this.props.userRolesService, this.props.userLoginName), timeout])
       .then(({ role, listed, error, detail }) => {
-        this.setState({ role, roleLabel: error ? 'Эрх: алдаа' : !listed ? 'Эрх: бүртгэлгүй (Role 2)' : `Эрх: Role ${role}` });
+        this.setState({ role });
         if (error) {
           console.error('[OnboardingTracker] role check failed:', error);
         } else {
@@ -68,7 +64,7 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
         }
       })
       .catch((e: Error) => {
-        this.setState({ role: 2, roleLabel: 'Эрх: алдаа' });
+        this.setState({ role: 2 });
         console.error('[OnboardingTracker] role check failed:', e.message);
       });
   }
@@ -122,15 +118,6 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
       >
         <header className={styles.appHeader}>
           <span className="tw-flex-1">Onboarding process tracker</span>
-          <div className="tw-mr-3">
-            <UserPersona
-              graph={this.props.graphService}
-              name={this.props.userDisplayName}
-              email={this.props.userEmail}
-              secondaryText={this.state.roleLabel}
-              size={PersonaSize.size40}
-            />
-          </div>
           <button
             type="button"
             title={fullscreen ? 'Жижигрүүлэх' : 'Бүтэн дэлгэц'}
