@@ -3,7 +3,7 @@
   "solution": {
     "name": "onboarding-tracker-webpart-client-side-solution",
     "id": "934fbaf7-cbbc-4d1f-8347-defefb3b94b5",
-    "version": "1.0.0.0",
+    "version": "1.0.1.0",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,
