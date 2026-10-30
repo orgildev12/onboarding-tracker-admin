@@ -12,6 +12,8 @@ import JobSettingsPage from './pages/JobSettingsPage';
 import JobTaskProcessPage from './pages/JobTaskProcessPage';
 import NewEmployeesPage from './pages/NewEmployeesPage';
 import FormsSetupPage from './pages/FormsSetupPage';
+import LoginsPage from './pages/LoginsPage';
+import { recordLogin } from '../services/recordLogin';
 import type { IEmployee } from '../models/Employee';
 import PageIcon from './pages/features/common/PageIcon';
 
@@ -33,11 +35,16 @@ const NAV_ITEMS: INavItem[] = [
   { key: 'jobSettings', title: 'Job settings', iconName: 'Work' },
   { key: 'jobTaskProcess', title: 'Job tasks', iconName: 'Flow' },
   { key: 'formsSetup', title: 'Forms questions', iconName: 'BulletedList' },
+  { key: 'logins', title: 'Logins', iconName: 'Contact' },
   { key: 'test', title: 'Test', iconName: 'TestBeaker' }
 ];
 
 export default class OnboardingTracker extends React.Component<IOnboardingTrackerProps, IState> {
   public state: IState = { page: 'home', selectedEmployee: undefined, returnPage: 'home', fullscreen: false };
+
+  public componentDidMount(): void {
+    recordLogin(this.props.loginsService, this.props.userLoginName).catch(() => undefined);
+  }
 
   private _navigate = (page: 'history' | 'settings'): void => {
     this.setState({ page, selectedEmployee: undefined });
@@ -65,6 +72,8 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
         return <JobTaskProcessPage {...this.props} />;
       case 'formsSetup':
         return <FormsSetupPage {...this.props} />;
+      case 'logins':
+        return <LoginsPage {...this.props} />;
       case 'test':
         return <TestPage {...this.props} />;
       default:

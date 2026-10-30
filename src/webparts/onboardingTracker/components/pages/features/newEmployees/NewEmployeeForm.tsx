@@ -2,6 +2,7 @@ import * as React from 'react';
 import styles from '../../../OnboardingTracker.module.scss';
 import type { ListService } from '../../../../services/ListService';
 import type { GraphService } from '../../../../services/GraphService';
+import type { IDepartment } from '../jobs/JobSettingsTypes';
 import PersonPicker from './PersonPicker';
 import type { IAnketPage, INewEmployeeDraft, INewEmployeeJob, IUserOption } from './NewEmployeeTypes';
 import { clampPercent, EMPTY_DRAFT } from './NewEmployeeTypes';
@@ -10,6 +11,7 @@ export interface INewEmployeeFormProps {
   heading: string;
   initial: INewEmployeeDraft | undefined;
   jobs: INewEmployeeJob[];
+  departments: IDepartment[];
   users: IUserOption[];
   personService: ListService;
   graph: GraphService;
@@ -26,10 +28,36 @@ const TRAITS: Array<{ key: TraitKey; label: string }> = [
   { key: 'judging', label: 'Judging' }
 ];
 
-export default function NewEmployeeForm({ heading, initial, jobs, users, personService, graph, onSave, onCancel }: INewEmployeeFormProps): React.ReactElement {
+// The job's department is a Gazar, or a Heltes under a Gazar.
+function initialSelection(initial: INewEmployeeDraft | undefined, jobs: INewEmployeeJob[], departments: IDepartment[]): { gazar: string; heltes: string } {
+  const job = initial ? jobs.filter(item => item.id === initial.jobId)[0] : undefined;
+  const department = job ? departments.filter(item => item.id === job.departmentId)[0] : undefined;
+  if (!department) {
+    return { gazar: '', heltes: '' };
+  }
+  if (department.isGazar) {
+    return { gazar: String(department.id), heltes: '' };
+  }
+  return department.gazarId ? { gazar: String(department.gazarId), heltes: String(department.id) } : { gazar: '', heltes: '' };
+}
+
+export default function NewEmployeeForm({ heading, initial, jobs, departments, users, personService, graph, onSave, onCancel }: INewEmployeeFormProps): React.ReactElement {
   const [draft, setDraft] = React.useState<INewEmployeeDraft>(initial || EMPTY_DRAFT);
+  const [gazar, setGazar] = React.useState(() => initialSelection(initial, jobs, departments).gazar);
+  const [heltes, setHeltes] = React.useState(() => initialSelection(initial, jobs, departments).heltes);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState('');
+
+  const gazarOptions = departments.filter(item => item.isGazar);
+  const heltesOptions = gazar ? departments.filter(item => !item.isGazar && item.gazarId === Number(gazar)) : [];
+  // a Gazar without any Heltes holds its jobs directly
+  const jobDepartmentId = heltes ? Number(heltes) : gazar && heltesOptions.length === 0 ? Number(gazar) : undefined;
+  const jobOptions = jobs.filter(job => jobDepartmentId !== undefined && job.departmentId === jobDepartmentId);
+  // keep a saved job visible even when it has no department
+  const currentJob = jobs.filter(job => job.id === draft.jobId)[0];
+  if (currentJob && jobOptions.indexOf(currentJob) === -1) {
+    jobOptions.push(currentJob);
+  }
 
   const set = <K extends keyof INewEmployeeDraft>(key: K, value: INewEmployeeDraft[K]): void =>
     setDraft(current => ({ ...current, [key]: value }));
@@ -89,17 +117,42 @@ export default function NewEmployeeForm({ heading, initial, jobs, users, personS
         <div className="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-x-4">
           {text('Нэр', 'firstName', true)}
           {text('Овог', 'lastName', true)}
-          {text('Утас', 'phone')}
-          {text('Хувийн и-мэйл', 'personalEmail', false, 'email')}
+          {text('Утас', 'phone', true)}
+          {text('Хувийн и-мэйл', 'personalEmail', true, 'email')}
           {text('Ажлын и-мэйл', 'workEmail', false, 'email')}
           {text('MBTI', 'mbti')}
-          <label className={styles.field}>
-            <span>Ажлын байр</span>
-            <select value={draft.jobId ?? ''} onChange={event => set('jobId', event.target.value ? Number(event.target.value) : undefined)}>
-              <option value="">-</option>
-              {jobs.map(job => <option key={job.id} value={job.id}>{job.title}</option>)}
-            </select>
-          </label>
+          <div className={`tw-grid tw-grid-cols-1 tw-gap-x-4 sm:tw-col-span-2 ${heltesOptions.length > 0 ? 'sm:tw-grid-cols-3' : 'sm:tw-grid-cols-2'}`}>
+            <label className={styles.field}>
+              <span>Газар</span>
+              <select
+                value={gazar}
+                onChange={event => { setGazar(event.target.value); setHeltes(''); set('jobId', undefined); }}
+              >
+                <option value="">-</option>
+                {gazarOptions.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
+              </select>
+            </label>
+            {heltesOptions.length > 0 && (
+              <label className={styles.field}>
+                <span>Хэлтэс</span>
+                <select value={heltes} onChange={event => { setHeltes(event.target.value); set('jobId', undefined); }}>
+                  <option value="">-</option>
+                  {heltesOptions.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
+                </select>
+              </label>
+            )}
+            <label className={styles.field}>
+              <span>Ажлын байр</span>
+              <select
+                value={draft.jobId ?? ''}
+                disabled={jobOptions.length === 0}
+                onChange={event => set('jobId', event.target.value ? Number(event.target.value) : undefined)}
+              >
+                <option value="">-</option>
+                {jobOptions.map(job => <option key={job.id} value={job.id}>{job.title}</option>)}
+              </select>
+            </label>
+          </div>
           <div className={styles.field}>
             <span>Шууд удирдлага</span>
             <PersonPicker
@@ -111,13 +164,14 @@ export default function NewEmployeeForm({ heading, initial, jobs, users, personS
               onError={setError}
             />
           </div>
+          <span className="tw-hidden sm:tw-block" />
           <label className={styles.field}>
-            <span>Туршилтын эхлэх огноо</span>
-            <input type="date" value={draft.probationStartDate} onChange={event => set('probationStartDate', event.target.value)} />
+            <span>Туршилтын эхлэх огноо *</span>
+            <input type="date" required value={draft.probationStartDate} onChange={event => set('probationStartDate', event.target.value)} />
           </label>
           <label className={styles.field}>
-            <span>Туршилтын дуусах огноо</span>
-            <input type="date" value={draft.probationEndDate} onChange={event => set('probationEndDate', event.target.value)} />
+            <span>Туршилтын дуусах огноо *</span>
+            <input type="date" required value={draft.probationEndDate} onChange={event => set('probationEndDate', event.target.value)} />
           </label>
           {TRAITS.map(trait => (
             <label key={trait.key} className={styles.field}>

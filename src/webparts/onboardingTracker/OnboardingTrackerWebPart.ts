@@ -55,9 +55,11 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
         taskGroupProcessService: new ListService(this.context.spHttpClient, webUrl, 'TaskGroupProcess'),
         taskResultsStatusFieldsService: new ListService(this.context.spHttpClient, webUrl, 'TaskResultsStatusFields'),
         roleOwnersService: new ListService(this.context.spHttpClient, webUrl, 'RoleOwners'),
+        loginsService: new ListService(this.context.spHttpClient, webUrl, 'Logins'),
         createListService: (name: string) => new ListService(this.context.spHttpClient, webUrl, name),
         graphService: new GraphService(this.context.msGraphClientFactory),
-        userDisplayName: this.context.pageContext.user.displayName
+        userDisplayName: this.context.pageContext.user.displayName,
+        userLoginName: this.context.pageContext.user.loginName
       }
     );
 

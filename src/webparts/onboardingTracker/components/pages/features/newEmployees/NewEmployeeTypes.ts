@@ -1,6 +1,10 @@
+import type { IDepartment } from '../jobs/JobSettingsTypes';
+
 export interface INewEmployeeJob {
   id: number;
   title: string;
+  // a Gazar, or a Heltes under a Gazar
+  departmentId: number | undefined;
 }
 
 export interface IUserOption {
@@ -45,6 +49,7 @@ export interface INewEmployeeRecord extends INewEmployeeDraft {
 export interface INewEmployeeData {
   employees: INewEmployeeRecord[];
   jobs: INewEmployeeJob[];
+  departments: IDepartment[];
   users: IUserOption[];
 }
 
@@ -88,7 +93,7 @@ export const DEFAULT_NEW_EMPLOYEE_FIELDS: INewEmployeeFields = {
   anketIndex: 'Index'
 };
 
-export const EMPTY_NEW_EMPLOYEE_DATA: INewEmployeeData = { employees: [], jobs: [], users: [] };
+export const EMPTY_NEW_EMPLOYEE_DATA: INewEmployeeData = { employees: [], jobs: [], departments: [], users: [] };
 
 export const EMPTY_DRAFT: INewEmployeeDraft = {
   firstName: '',

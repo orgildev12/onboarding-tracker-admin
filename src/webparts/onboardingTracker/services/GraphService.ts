@@ -21,6 +21,7 @@ interface IGraphUser {
 export class GraphService {
   private clientPromise: Promise<MSGraphClientV3> | undefined;
   private readonly photos = new Map<string, Promise<string>>();
+  private readonly jobTitles = new Map<string, Promise<string>>();
 
   constructor(private readonly factory: MSGraphClientFactory) {}
 
@@ -59,6 +60,23 @@ export class GraphService {
           loginName: `i:0#.f|membership|${user.userPrincipalName || email}`
         };
       });
+  }
+
+  // Job title from the directory, or '' when there is none. Cached per email.
+  public getJobTitle(email: string): Promise<string> {
+    if (!email) {
+      return Promise.resolve('');
+    }
+    const key = email.toLowerCase();
+    let title = this.jobTitles.get(key);
+    if (!title) {
+      title = this.getClient()
+        .then(client => client.api(`/users/${encodeURIComponent(email)}`).select('jobTitle').get() as Promise<IGraphUser>)
+        .then(user => user.jobTitle || '')
+        .catch(() => '');
+      this.jobTitles.set(key, title);
+    }
+    return title;
   }
 
   // Returns an object URL for the user's photo, or '' when there is none. Cached per email.

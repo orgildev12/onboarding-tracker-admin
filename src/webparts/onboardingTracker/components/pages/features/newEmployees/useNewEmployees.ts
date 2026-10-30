@@ -1,13 +1,13 @@
 import * as React from 'react';
 import type { IOnboardingTrackerProps } from '../../../IOnboardingTrackerProps';
 import type { ListItem } from '../../../../services/ListService';
-import { dateOnly, findFieldName, findLookupField, imageUrl, numberValue, readLookupId, readValue, textValue } from '../../../../utils/listFields';
+import { booleanValue, dateOnly, findFieldName, findLookupField, imageUrl, numberValue, readLookupId, readValue, textValue } from '../../../../utils/listFields';
 import type { IAnketPage, INewEmployeeData, INewEmployeeDraft, INewEmployeeFields, INewEmployeeRecord } from './NewEmployeeTypes';
 import { clampPercent, DEFAULT_NEW_EMPLOYEE_FIELDS, EMPTY_NEW_EMPLOYEE_DATA } from './NewEmployeeTypes';
 
 type NewEmployeeServices = Pick<
   IOnboardingTrackerProps,
-  'newEmployeesService' | 'anketsService' | 'jobsService'
+  'newEmployeesService' | 'anketsService' | 'jobsService' | 'departmentsService'
 >;
 
 // Library that receives uploaded anket images
@@ -23,19 +23,22 @@ export interface INewEmployees {
 }
 
 export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
-  const { newEmployeesService, anketsService, jobsService } = services;
+  const { newEmployeesService, anketsService, jobsService, departmentsService } = services;
   const [data, setData] = React.useState<INewEmployeeData>(EMPTY_NEW_EMPLOYEE_DATA);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
   const fieldsRef = React.useRef<INewEmployeeFields>(DEFAULT_NEW_EMPLOYEE_FIELDS);
 
   const fetchData = React.useCallback(async (): Promise<INewEmployeeData> => {
-    const [employeeItems, employeeFields, anketItems, anketFields, jobItems, users] = await Promise.all([
+    const [employeeItems, employeeFields, anketItems, anketFields, jobItems, jobFields, departmentItems, departmentFields, users] = await Promise.all([
       newEmployeesService.getAllItems(),
       newEmployeesService.getFields(),
       anketsService.getAllItems(),
       anketsService.getFields(),
       jobsService.getItems(),
+      jobsService.getFields(),
+      departmentsService.getItems(),
+      departmentsService.getFields(),
       newEmployeesService.getSiteUsers()
     ]);
 
@@ -105,15 +108,29 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
       };
     });
 
+    const jobDepartmentField = findLookupField(jobFields, ['DepartmentID', 'Department'], 'DepartmentID');
+    const isGazarField = findFieldName(departmentFields, ['IsGazar'], 'IsGazar');
+    const departmentGazarField = findLookupField(departmentFields, ['GazarID', 'Gazar'], 'GazarID');
+
     return {
       employees,
-      jobs: jobItems.map(item => ({ id: numberValue(item.Id), title: textValue(item.Title) })),
+      jobs: jobItems.map(item => ({
+        id: numberValue(item.Id),
+        title: textValue(item.Title),
+        departmentId: readLookupId(item, jobDepartmentField, ['DepartmentID', 'Department'])
+      })),
+      departments: departmentItems.map(item => ({
+        id: numberValue(item.Id),
+        title: textValue(item.Title),
+        isGazar: booleanValue(readValue(item, [isGazarField, 'IsGazar'])),
+        gazarId: readLookupId(item, departmentGazarField, ['GazarID', 'Gazar'])
+      })),
       users: users
         .filter(u => !/^(SHAREPOINT\\|NT SERVICE\\|NT AUTHORITY\\)/i.test(u.LoginName) && u.Title !== 'System Account')
         .map(u => ({ id: u.Id, title: u.Title, email: u.Email || '', loginName: u.LoginName }))
         .sort((a, b) => a.title.localeCompare(b.title))
     };
-  }, [newEmployeesService, anketsService, jobsService]);
+  }, [newEmployeesService, anketsService, jobsService, departmentsService]);
 
   const reload = React.useCallback(async (): Promise<void> => {
     setLoading(true);

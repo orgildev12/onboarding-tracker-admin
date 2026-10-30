@@ -18,8 +18,12 @@ export interface IOnboardingTrackerProps {
   taskGroupProcessService: ListService;
   taskResultsStatusFieldsService: ListService;
   roleOwnersService: ListService;
+  // one row per user: Employee (Person) + LastLoginDate (Date and Time)
+  loginsService: ListService;
   // for lists chosen at runtime, e.g. Tasks.TaskFieldTableName
   createListService: (listName: string) => ListService;
   graphService: GraphService;
   userDisplayName: string;
+  // claims login name of the current user, accepted by SharePoint ensureUser
+  userLoginName: string;
 }

@@ -8,6 +8,7 @@ export interface IJob {
   title: string;
   jobGroupId: number | undefined;
   departmentId: number | undefined;
+  isRegional: boolean;
 }
 
 // A row of the Departments list: either a Gazar (isGazar) or a Heltes that belongs to a Gazar (gazarId).
@@ -57,11 +58,14 @@ export interface IJobSettingsData {
   catalog: ICatalogTask[];
   jobTasks: IJobTask[];
   departments: IDepartment[];
+  // false when the Jobs list has no IsRegional column
+  hasIsRegional: boolean;
 }
 
 export interface IJobSettingsFields {
   jobGroupOnJob: string;
   department: string;
+  isRegional: string;
   taskId: string;
   jobGroupId: string;
   jobId: string;
@@ -72,12 +76,13 @@ export interface IJobSettingsFields {
 }
 
 export const EMPTY_JOB_SETTINGS: IJobSettingsData = {
-  groups: [], jobs: [], catalog: [], jobTasks: [], departments: []
+  groups: [], jobs: [], catalog: [], jobTasks: [], departments: [], hasIsRegional: false
 };
 
 export const DEFAULT_JOB_SETTINGS_FIELDS: IJobSettingsFields = {
   jobGroupOnJob: 'JobGroupID',
   department: 'DepartmentID',
+  isRegional: '',
   taskId: 'TaskID',
   jobGroupId: 'JobGroupID',
   jobId: 'JobID',

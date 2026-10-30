@@ -6,7 +6,7 @@ import NewEmployeeForm from './features/newEmployees/NewEmployeeForm';
 import type { INewEmployeeDraft, INewEmployeeRecord } from './features/newEmployees/NewEmployeeTypes';
 import { useNewEmployees } from './features/newEmployees/useNewEmployees';
 
-type NewEmployeesPageProps = Pick<IOnboardingTrackerProps, 'newEmployeesService' | 'anketsService' | 'jobsService' | 'graphService'>;
+type NewEmployeesPageProps = Pick<IOnboardingTrackerProps, 'newEmployeesService' | 'anketsService' | 'jobsService' | 'departmentsService' | 'graphService'>;
 
 interface IFormState {
   employee: INewEmployeeRecord | undefined;
@@ -94,6 +94,7 @@ export default function NewEmployeesPage(props: NewEmployeesPageProps): React.Re
           heading={form.employee ? 'Ажилтан засах' : 'Шинэ ажилтан'}
           initial={form.employee}
           jobs={data.jobs}
+          departments={data.departments}
           users={data.users}
           personService={props.newEmployeesService}
           graph={props.graphService}

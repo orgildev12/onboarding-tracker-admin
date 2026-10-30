@@ -24,7 +24,7 @@ export interface IJobSettings {
   error: string;
   reload: () => Promise<void>;
   saveTitle: (
-    kind: 'group' | 'job', id: number | undefined, title: string, groupId?: number, departmentId?: number
+    kind: 'group' | 'job', id: number | undefined, title: string, groupId?: number, departmentId?: number, isRegional?: boolean
   ) => Promise<void>;
   deleteEntry: (kind: 'group' | 'job', id: number) => Promise<void>;
   setJobGroup: (jobId: number, groupId: number | undefined) => Promise<void>;
@@ -65,6 +65,7 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
     const fields: IJobSettingsFields = {
       jobGroupOnJob: findLookupField(jobFields, ['JobGroupID', 'JobGroup'], DEFAULT_JOB_SETTINGS_FIELDS.jobGroupOnJob),
       department: findLookupField(jobFields, ['DepartmentID', 'Department'], DEFAULT_JOB_SETTINGS_FIELDS.department),
+      isRegional: findFieldName(jobFields, ['IsRegional'], ''),
       taskId: findLookupField(linkFields, ['TaskID', 'Task'], DEFAULT_JOB_SETTINGS_FIELDS.taskId),
       jobGroupId: findLookupField(linkFields, ['JobGroupID', 'JobGroup'], DEFAULT_JOB_SETTINGS_FIELDS.jobGroupId),
       jobId: findLookupField(linkFields, ['JobID', 'Job'], DEFAULT_JOB_SETTINGS_FIELDS.jobId),
@@ -108,12 +109,14 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
       .map(({ id, title, taskGroupTitle, defaultBodyText }) => ({ id, title, taskGroupTitle, defaultBodyText }));
 
     return {
+      hasIsRegional: !!fields.isRegional,
       groups: jobGroupItems.map(item => ({ id: numberValue(item.Id), title: textValue(item.Title) })),
       jobs: jobItems.map(item => ({
         id: numberValue(item.Id),
         title: textValue(item.Title),
         jobGroupId: readLookupId(item, fields.jobGroupOnJob, ['JobGroupID', 'JobGroup']),
-        departmentId: readLookupId(item, fields.department, ['DepartmentID', 'Department'])
+        departmentId: readLookupId(item, fields.department, ['DepartmentID', 'Department']),
+        isRegional: !!fields.isRegional && booleanValue(readValue(item, [fields.isRegional]))
       })),
       departments,
       catalog,
@@ -207,7 +210,7 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
     }
   };
 
-  const saveTitle: IJobSettings['saveTitle'] = (kind, id, title, groupId, departmentId) => {
+  const saveTitle: IJobSettings['saveTitle'] = (kind, id, title, groupId, departmentId, isRegional) => {
     if (kind === 'job' && departmentId === undefined) {
       return Promise.reject(new Error('Газар (шаардлагатай бол Хэлтэс)-ийг сонгоно уу.'));
     }
@@ -216,6 +219,10 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
       const fields: ListItem = { Title: title };
       if (kind === 'job') {
         fields[fieldsRef.current.department] = departmentId;
+        // IsRegional is optional: only written when the column exists
+        if (isRegional !== undefined && fieldsRef.current.isRegional) {
+          fields[fieldsRef.current.isRegional] = isRegional;
+        }
       }
       if (id !== undefined) {
         await service.updateItem(id, fields);

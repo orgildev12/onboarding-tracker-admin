@@ -15,7 +15,11 @@ export interface ITitleDialogProps {
   groups?: IJobGroup[];
   // when provided, a Gazar (and its Heltes, if it has any) must be chosen (used for jobs)
   department?: IDepartmentOptions;
-  onSave: (title: string, groupId: number | undefined, departmentId: number | undefined) => Promise<void>;
+  // when provided, a "regional job" checkbox is shown (used for jobs); the value is the current IsRegional
+  regional?: { initialIsRegional: boolean };
+  onSave: (
+    title: string, groupId: number | undefined, departmentId: number | undefined, isRegional: boolean | undefined
+  ) => Promise<void>;
   onDelete?: () => void;
   onCancel: () => void;
 }
@@ -31,12 +35,13 @@ function initialSelection(options: IDepartmentOptions | undefined): { gazar: str
   return current.gazarId ? { gazar: String(current.gazarId), heltes: String(current.id) } : { gazar: '', heltes: '' };
 }
 
-export default function TitleDialog({ heading, initialTitle, groups, department, onSave, onDelete, onCancel }: ITitleDialogProps): React.ReactElement {
+export default function TitleDialog({ heading, initialTitle, groups, department, regional, onSave, onDelete, onCancel }: ITitleDialogProps): React.ReactElement {
   const initial = initialSelection(department);
   const [title, setTitle] = React.useState(initialTitle);
   const [groupId, setGroupId] = React.useState('');
   const [gazar, setGazar] = React.useState(initial.gazar);
   const [heltes, setHeltes] = React.useState(initial.heltes);
+  const [isRegional, setIsRegional] = React.useState(regional ? regional.initialIsRegional : false);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState('');
 
@@ -52,7 +57,7 @@ export default function TitleDialog({ heading, initialTitle, groups, department,
     setError('');
     setSaving(true);
     try {
-      await onSave(title.trim(), groupId ? Number(groupId) : undefined, departmentId);
+      await onSave(title.trim(), groupId ? Number(groupId) : undefined, departmentId, regional ? isRegional : undefined);
     } catch (e) {
       setError((e as Error).message);
       setSaving(false);
@@ -93,6 +98,14 @@ export default function TitleDialog({ heading, initialTitle, groups, department,
               </label>
             )}
           </>
+        )}
+        {regional && (
+          <label className={styles.field}>
+            <span>
+              <input type="checkbox" checked={isRegional} onChange={event => setIsRegional(event.target.checked)} />
+              {' '}Бүс нутгийн ажлын байр (IsRegional)
+            </span>
+          </label>
         )}
         {groups && (
           <label className={styles.field}>

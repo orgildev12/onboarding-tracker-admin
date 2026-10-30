@@ -48,6 +48,7 @@ async function fetchJobProcess(services: JobProcessServices): Promise<IJobProces
 
   const jobGroupOnJob = findLookupField(jobFields, ['JobGroupID', 'JobGroup'], 'JobGroupID');
   const jobDepartment = findLookupField(jobFields, ['DepartmentID', 'Department'], 'DepartmentID');
+  const isRegionalField = findFieldName(jobFields, ['IsRegional'], 'IsRegional');
   const linkTask = findLookupField(linkFields, ['TaskID', 'Task'], 'TaskID');
   const linkJobGroup = findLookupField(linkFields, ['JobGroupID', 'JobGroup'], 'JobGroupID');
   const linkJob = findLookupField(linkFields, ['JobID', 'Job'], 'JobID');
@@ -68,7 +69,8 @@ async function fetchJobProcess(services: JobProcessServices): Promise<IJobProces
       id: numberValue(item.Id),
       title: textValue(item.Title),
       jobGroupId: readLookupId(item, jobGroupOnJob, ['JobGroupID', 'JobGroup']),
-      departmentId: readLookupId(item, jobDepartment, ['DepartmentID', 'Department'])
+      departmentId: readLookupId(item, jobDepartment, ['DepartmentID', 'Department']),
+      isRegional: booleanValue(readValue(item, [isRegionalField]))
     })),
     departments: departmentItems.map(item => ({
       id: numberValue(item.Id),
