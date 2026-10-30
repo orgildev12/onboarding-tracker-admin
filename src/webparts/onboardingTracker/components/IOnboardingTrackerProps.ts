@@ -28,4 +28,5 @@ export interface IOnboardingTrackerProps {
   userDisplayName: string;
   // claims login name of the current user, accepted by SharePoint ensureUser
   userLoginName: string;
+  userEmail: string;
 }

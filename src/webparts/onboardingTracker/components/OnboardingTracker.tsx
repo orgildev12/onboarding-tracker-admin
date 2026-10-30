@@ -18,6 +18,8 @@ import { getUserRole } from '../services/userRole';
 import type { UserRole } from '../services/userRole';
 import type { IEmployee } from '../models/Employee';
 import PageIcon from './pages/features/common/PageIcon';
+import UserPersona from './pages/features/newEmployees/UserPersona';
+import { PersonaSize } from '@fluentui/react/lib/Persona';
 
 interface IState {
   page: string;
@@ -120,7 +122,15 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
       >
         <header className={styles.appHeader}>
           <span className="tw-flex-1">Onboarding process tracker</span>
-          <span className="tw-mr-3 tw-text-xs tw-font-normal tw-text-gray-600">{this.state.roleLabel}</span>
+          <div className="tw-mr-3">
+            <UserPersona
+              graph={this.props.graphService}
+              name={this.props.userDisplayName}
+              email={this.props.userEmail}
+              secondaryText={this.state.roleLabel}
+              size={PersonaSize.size40}
+            />
+          </div>
           <button
             type="button"
             title={fullscreen ? 'Жижигрүүлэх' : 'Бүтэн дэлгэц'}
