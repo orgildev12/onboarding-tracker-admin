@@ -9,7 +9,11 @@ export interface IEmployeeTableProps {
 }
 
 export default function EmployeeTable({ employees, steps, onSelectEmployee }: IEmployeeTableProps): React.ReactElement {
-  const gridTemplateColumns = `220px 140px repeat(${steps.length}, 150px)`;
+  // a step nobody has a process for is not shown at all
+  const visibleIndexes = steps
+    .map((_, i) => i)
+    .filter(i => employees.length === 0 || employees.some(employee => employee.steps[i] !== 'noProcess'));
+  const gridTemplateColumns = `220px 140px repeat(${visibleIndexes.length}, 150px)`;
 
   return (
     <div className="tw-overflow-x-auto tw-bg-white tw-rounded tw-shadow-sm">
@@ -17,14 +21,14 @@ export default function EmployeeTable({ employees, steps, onSelectEmployee }: IE
         <div className="tw-grid tw-items-center tw-border-b tw-border-gray-800" style={{ gridTemplateColumns }}>
           <div className="tw-px-6 tw-py-3 tw-text-sm tw-font-semibold tw-text-center">Шинэ ажилчид</div>
           <div className="tw-px-4 tw-py-3 tw-text-sm tw-font-semibold tw-text-center">Төлөв</div>
-          {steps.map(step => (
-            <div key={step.key} className="tw-px-2 tw-py-3 tw-text-sm tw-font-semibold tw-text-center">
-              {step.title}
+          {visibleIndexes.map(i => (
+            <div key={steps[i].key} className="tw-px-2 tw-py-3 tw-text-sm tw-font-semibold tw-text-center">
+              {steps[i].title}
             </div>
           ))}
         </div>
         {employees.map(employee => (
-          <EmployeeTableRow key={employee.id} employee={employee} steps={steps} gridTemplateColumns={gridTemplateColumns} onSelectEmployee={onSelectEmployee} />
+          <EmployeeTableRow key={employee.id} employee={employee} steps={steps} visibleIndexes={visibleIndexes} gridTemplateColumns={gridTemplateColumns} onSelectEmployee={onSelectEmployee} />
         ))}
       </div>
     </div>

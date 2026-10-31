@@ -2,6 +2,7 @@ import * as React from 'react';
 import styles from '../../../OnboardingTracker.module.scss';
 import type { ITask, ITaskGroup } from './TaskAdminTypes';
 import { MAX_TASKS_PER_GROUP } from './TaskAdminTypes';
+import { useRowReorder } from '../../../../utils/useRowReorder';
 
 export interface ITaskGroupSectionProps {
   group: ITaskGroup;
@@ -22,20 +23,14 @@ export interface ITaskGroupSectionProps {
 
 export default function TaskGroupSection(props: ITaskGroupSectionProps): React.ReactElement {
   const [expanded, setExpanded] = React.useState(true);
-  const [draggedId, setDraggedId] = React.useState<number | undefined>();
-
-  const startDrag = (event: React.DragEvent<HTMLTableRowElement>, task: ITask): void => {
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', String(task.id));
-    setDraggedId(task.id);
-  };
-  const dropOn = (event: React.DragEvent<HTMLTableRowElement>, task: ITask): void => {
-    event.preventDefault();
-    const sourceId = Number(event.dataTransfer.getData('text/plain'));
-    setDraggedId(undefined);
-    if (sourceId && sourceId !== task.id) {
-      props.onReorder(props.group, sourceId, task.id);
-    }
+  const { getRowProps, getRowState } = useRowReorder(
+    props.tasks.map(task => task.id),
+    (sourceId, targetId) => props.onReorder(props.group, sourceId, targetId)
+  );
+  const rowClass: Record<string, string> = {
+    dragging: styles.draggingRow,
+    dropAbove: styles.dropAbove,
+    dropBelow: styles.dropBelow
   };
 
   return (
@@ -56,6 +51,18 @@ export default function TaskGroupSection(props: ITaskGroupSectionProps): React.R
         <>
           <div className={styles.tableWrap}>
             <table className={`${styles.table} ${styles.taskTable}`}>
+              <colgroup>
+                <col style={{ width: 32 }} />
+                <col style={{ width: 50 }} />
+                <col style={{ width: 280 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 210 }} />
+                <col style={{ width: 170 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 170 }} />
+                <col style={{ width: 200 }} />
+                <col style={{ width: 138 }} />
+              </colgroup>
               <thead>
                 <tr>
                   <th aria-label="Reorder" />
@@ -74,12 +81,8 @@ export default function TaskGroupSection(props: ITaskGroupSectionProps): React.R
                 {props.tasks.map(task => (
                   <tr
                     key={task.id}
-                    draggable={!props.disabled}
-                    className={draggedId === task.id ? styles.draggingRow : ''}
-                    onDragStart={event => startDrag(event, task)}
-                    onDragEnd={() => setDraggedId(undefined)}
-                    onDragOver={event => event.preventDefault()}
-                    onDrop={event => dropOn(event, task)}
+                    {...getRowProps(task.id, props.disabled)}
+                    className={`${styles.dragRow} ${rowClass[getRowState(task.id) || ''] || ''}`}
                     onDoubleClick={() => props.onEditTask(task)}
                     title="Double-click to edit; drag to reorder"
                   >

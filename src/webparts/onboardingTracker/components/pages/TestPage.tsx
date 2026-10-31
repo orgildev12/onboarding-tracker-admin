@@ -106,6 +106,8 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
     editingGroup: undefined
   };
 
+  private _pendingMutations = 0;
+
   public componentDidMount(): void {
     void this._load();
   }
@@ -158,8 +160,14 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
     }
   }
 
-  private async _mutate(action: () => Promise<void>): Promise<void> {
-    this.setState({ loading: true, error: '' });
+  // With `optimistic`, the page updates at once and syncs with the list in the background.
+  private async _mutate(action: () => Promise<void>, optimistic?: Partial<ITaskAdminData>): Promise<void> {
+    this._pendingMutations++;
+    if (optimistic) {
+      this.setState({ ...optimistic, error: '' } as Pick<IState, keyof IState>);
+    } else {
+      this.setState({ loading: true, error: '' });
+    }
     let failure: Error | undefined;
     try {
       await action();
@@ -167,13 +175,19 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
       failure = e as Error;
     }
 
+    let fresh: ITaskAdminData | undefined;
     try {
-      this.setState(await this._loadData());
+      fresh = await this._loadData();
     } catch (e) {
       const reloadError = e as Error;
       failure = failure
         ? new Error(`${failure.message}\nRefresh also failed: ${reloadError.message}`)
         : reloadError;
+    }
+    this._pendingMutations--;
+    // only the last running change applies the reloaded data, so older reloads can't undo newer edits
+    if (fresh && this._pendingMutations === 0) {
+      this.setState(fresh);
     }
     this.setState({ loading: false, error: failure ? failure.message : '' });
     if (failure) {
@@ -289,12 +303,30 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
     }
     const [moved] = tasks.splice(sourceIndex, 1);
     tasks.splice(targetIndex, 0, moved);
+    const newOrder = new Map(tasks.map((task, index) => [task.id, index + 1]));
+    const reordered = this.state.tasks
+      .map(task => newOrder.has(task.id) ? { ...task, taskOrder: newOrder.get(task.id) as number } : task)
+      .sort(compareOrder);
     void this._mutate(async () => {
       await Promise.all(tasks.map((task, index) =>
         this.props.listService.updateItem(task.id, { [this.state.taskOrderField]: index + 1 })
       ));
-    }).catch(() => undefined);
+    }, { tasks: reordered }).catch(() => undefined);
   };
+
+  // TEMPORARY: wipes every row of TaskResultsStatusFields. Remove together with its button.
+  // private _clearStatusResults = (): void => {
+  //   if (!window.confirm('Delete ALL rows of TaskResultsStatusFields (every employee)? This cannot be undone.')) {
+  //     return;
+  //   }
+  //   const service = this.props.taskResultsStatusFieldsService;
+  //   void this._mutate(async () => {
+  //     const rows = await service.getAllItems();
+  //     for (let i = 0; i < rows.length; i += 10) {
+  //       await Promise.all(rows.slice(i, i + 10).map(row => service.deleteItem(numberValue(row.Id))));
+  //     }
+  //   }).catch(() => undefined);
+  // };
 
   private _openNewGroup = (): void => {
     this.setState({ groupEditorOpen: true, editingGroup: undefined, error: '' });
@@ -375,6 +407,7 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
           <div>
             <button type="button" disabled={loading} onClick={this._openNewGroup}>New task group</button>
             <button type="button" disabled={loading} onClick={() => { void this._load(); }}>Refresh</button>
+            {/* <button type="button" disabled={loading} onClick={this._clearStatusResults}>Delete all TaskResultsStatusFields (temporary)</button>? */}
           </div>
         </div>
         {error && <p className={styles.error} role="alert">{error}</p>}

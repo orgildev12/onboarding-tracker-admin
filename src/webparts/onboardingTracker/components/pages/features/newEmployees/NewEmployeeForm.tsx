@@ -13,6 +13,7 @@ export interface INewEmployeeFormProps {
   jobs: INewEmployeeJob[];
   departments: IDepartment[];
   users: IUserOption[];
+  regionOptions: string[];
   personService: ListService;
   graph: GraphService;
   onSave: (draft: INewEmployeeDraft) => Promise<void>;
@@ -41,7 +42,7 @@ function initialSelection(initial: INewEmployeeDraft | undefined, jobs: INewEmpl
   return department.gazarId ? { gazar: String(department.gazarId), heltes: String(department.id) } : { gazar: '', heltes: '' };
 }
 
-export default function NewEmployeeForm({ heading, initial, jobs, departments, users, personService, graph, onSave, onCancel }: INewEmployeeFormProps): React.ReactElement {
+export default function NewEmployeeForm({ heading, initial, jobs, departments, users, regionOptions, personService, graph, onSave, onCancel }: INewEmployeeFormProps): React.ReactElement {
   const [draft, setDraft] = React.useState<INewEmployeeDraft>(initial || EMPTY_DRAFT);
   const [gazar, setGazar] = React.useState(() => initialSelection(initial, jobs, departments).gazar);
   const [heltes, setHeltes] = React.useState(() => initialSelection(initial, jobs, departments).heltes);
@@ -58,6 +59,7 @@ export default function NewEmployeeForm({ heading, initial, jobs, departments, u
   if (currentJob && jobOptions.indexOf(currentJob) === -1) {
     jobOptions.push(currentJob);
   }
+  const isRegional = !!currentJob && currentJob.isRegional;
 
   const set = <K extends keyof INewEmployeeDraft>(key: K, value: INewEmployeeDraft[K]): void =>
     setDraft(current => ({ ...current, [key]: value }));
@@ -94,7 +96,7 @@ export default function NewEmployeeForm({ heading, initial, jobs, departments, u
     }
     setSaving(true);
     try {
-      await onSave(draft);
+      await onSave({ ...draft, whichRegion: isRegional ? draft.whichRegion.trim() : '' });
     } catch (e) {
       setError((e as Error).message);
       setSaving(false);
@@ -153,6 +155,15 @@ export default function NewEmployeeForm({ heading, initial, jobs, departments, u
               </select>
             </label>
           </div>
+          {isRegional && (
+            <label className={`${styles.field} sm:tw-col-span-2`}>
+              <span>Аль бүс нутаг вэ? *</span>
+              <select required value={draft.whichRegion} onChange={event => set('whichRegion', event.target.value)}>
+                <option value="">-</option>
+                {regionOptions.map(region => <option key={region} value={region}>{region}</option>)}
+              </select>
+            </label>
+          )}
           <div className={styles.field}>
             <span>Шууд удирдлага</span>
             <PersonPicker

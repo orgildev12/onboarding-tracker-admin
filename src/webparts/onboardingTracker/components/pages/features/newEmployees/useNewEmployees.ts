@@ -1,17 +1,21 @@
 import * as React from 'react';
 import type { IOnboardingTrackerProps } from '../../../IOnboardingTrackerProps';
-import type { ListItem } from '../../../../services/ListService';
+import type { ListItem, ListService } from '../../../../services/ListService';
+import { getChoices } from '../../../../services/ListService';
 import { booleanValue, dateOnly, findFieldName, findLookupField, imageUrl, numberValue, readLookupId, readValue, textValue } from '../../../../utils/listFields';
+import { TASK_RESULT_TABLE_BY_TYPE } from '../test/TaskAdminTypes';
 import type { IAnketPage, INewEmployeeData, INewEmployeeDraft, INewEmployeeFields, INewEmployeeRecord } from './NewEmployeeTypes';
 import { clampPercent, DEFAULT_NEW_EMPLOYEE_FIELDS, EMPTY_NEW_EMPLOYEE_DATA } from './NewEmployeeTypes';
 
 type NewEmployeeServices = Pick<
   IOnboardingTrackerProps,
-  'newEmployeesService' | 'anketsService' | 'jobsService' | 'departmentsService'
+  'newEmployeesService' | 'anketsService' | 'jobsService' | 'departmentsService' |
+  'taskGroupProcessService' | 'taskResultsStatusFieldsService' | 'createListService'
 >;
 
 // Library that receives uploaded anket images
 const IMAGE_LIBRARY = 'SiteAssets';
+const DELETE_BATCH_SIZE = 10;
 
 export interface INewEmployees {
   data: INewEmployeeData;
@@ -23,7 +27,7 @@ export interface INewEmployees {
 }
 
 export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
-  const { newEmployeesService, anketsService, jobsService, departmentsService } = services;
+  const { newEmployeesService, anketsService, jobsService, departmentsService, taskGroupProcessService, taskResultsStatusFieldsService, createListService } = services;
   const [data, setData] = React.useState<INewEmployeeData>(EMPTY_NEW_EMPLOYEE_DATA);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
@@ -59,6 +63,7 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
       probationStartDate: findFieldName(employeeFields, ['ProbationStartDate'], d.probationStartDate),
       probationEndDate: findFieldName(employeeFields, ['ProbationEndDate'], d.probationEndDate),
       jobId: findLookupField(employeeFields, ['JobID', 'Job'], d.jobId),
+      whichRegion: findFieldName(employeeFields, ['WhichRegion'], d.whichRegion),
       anketEmployeeId: findLookupField(anketFields, ['NewEmployeeID', 'NewEmployee'], d.anketEmployeeId),
       anketImage: findFieldName(anketFields, ['Image'], d.anketImage),
       anketIndex: findFieldName(anketFields, ['Index'], d.anketIndex)
@@ -104,20 +109,25 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
         probationStartDate: dateOnly(readValue(item, [fields.probationStartDate])),
         probationEndDate: dateOnly(readValue(item, [fields.probationEndDate])),
         jobId: readLookupId(item, fields.jobId, ['JobID', 'Job']),
+        whichRegion: textValue(readValue(item, [fields.whichRegion])).trim(),
         ankets
       };
     });
 
     const jobDepartmentField = findLookupField(jobFields, ['DepartmentID', 'Department'], 'DepartmentID');
+    const jobRegionalField = findFieldName(jobFields, ['IsRegional'], 'IsRegional');
     const isGazarField = findFieldName(departmentFields, ['IsGazar'], 'IsGazar');
     const departmentGazarField = findLookupField(departmentFields, ['GazarID', 'Gazar'], 'GazarID');
+    const regionField = employeeFields.find(field => field.InternalName === fields.whichRegion);
+    const regionOptions = regionField ? getChoices(regionField) : [];
 
     return {
       employees,
       jobs: jobItems.map(item => ({
         id: numberValue(item.Id),
         title: textValue(item.Title),
-        departmentId: readLookupId(item, jobDepartmentField, ['DepartmentID', 'Department'])
+        departmentId: readLookupId(item, jobDepartmentField, ['DepartmentID', 'Department']),
+        isRegional: booleanValue(readValue(item, [jobRegionalField]))
       })),
       departments: departmentItems.map(item => ({
         id: numberValue(item.Id),
@@ -128,7 +138,8 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
       users: users
         .filter(u => !/^(SHAREPOINT\\|NT SERVICE\\|NT AUTHORITY\\)/i.test(u.LoginName) && u.Title !== 'System Account')
         .map(u => ({ id: u.Id, title: u.Title, email: u.Email || '', loginName: u.LoginName }))
-        .sort((a, b) => a.title.localeCompare(b.title))
+        .sort((a, b) => a.title.localeCompare(b.title)),
+      regionOptions
     };
   }, [newEmployeesService, anketsService, jobsService, departmentsService]);
 
@@ -176,7 +187,8 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
         [f.firstLineManager]: draft.firstLineManagerId ?? null,
         [f.probationStartDate]: draft.probationStartDate ? new Date(draft.probationStartDate).toISOString() : null,
         [f.probationEndDate]: draft.probationEndDate ? new Date(draft.probationEndDate).toISOString() : null,
-        [f.jobId]: draft.jobId ?? null
+        [f.jobId]: draft.jobId ?? null,
+        [f.whichRegion]: draft.whichRegion.trim() || null
       };
 
       let employeeId = id;
@@ -209,8 +221,30 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
       }
     });
 
+  // Every list that stores per-employee rows. Rows are deleted before the employee so a failed
+  // attempt can be repeated; the employee row goes last.
+  const deleteEmployeeRows = async (service: ListService, employeeId: number): Promise<void> => {
+    const fields = await service.getFields();
+    const employeeField = findLookupField(fields, ['NewEmployeeID', 'NewEmployee'], 'NewEmployeeId');
+    const rows = await service.getAllItems(`${employeeField} eq ${employeeId}`);
+    for (let i = 0; i < rows.length; i += DELETE_BATCH_SIZE) {
+      await Promise.all(rows.slice(i, i + DELETE_BATCH_SIZE).map(row => service.deleteItem(numberValue(row.Id))));
+    }
+  };
+
   const remove = (employee: INewEmployeeRecord): Promise<void> =>
     mutate(async () => {
+      const resultTables = Object.keys(TASK_RESULT_TABLE_BY_TYPE)
+        .map(type => TASK_RESULT_TABLE_BY_TYPE[type])
+        .filter(name => name !== 'TaskResultsStatusFields');
+      const resultServices = [
+        taskResultsStatusFieldsService,
+        taskGroupProcessService,
+        ...resultTables.map(name => createListService(name))
+      ];
+      for (const service of resultServices) {
+        await deleteEmployeeRows(service, employee.id);
+      }
       for (const page of employee.ankets) {
         if (page.id !== undefined) {
           await anketsService.deleteItem(page.id);

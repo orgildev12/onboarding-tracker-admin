@@ -1,4 +1,6 @@
 import * as React from 'react';
+import styles from '../../../OnboardingTracker.module.scss';
+import { useRowReorder } from '../../../../utils/useRowReorder';
 import type { ICatalogTask, IJobTask } from './JobSettingsTypes';
 
 export interface IJobTaskTableProps {
@@ -15,7 +17,12 @@ export interface IJobTaskTableProps {
 const LINK_BUTTON = 'tw-border-0 tw-bg-transparent tw-p-0 tw-text-xs tw-text-orange-600 tw-underline tw-cursor-pointer';
 
 export default function JobTaskTable(props: IJobTaskTableProps): React.ReactElement {
-  const [draggedId, setDraggedId] = React.useState<number | undefined>();
+  const { getRowProps, getRowState } = useRowReorder(props.tasks.map(link => link.id), props.onReorder);
+  const rowClass: Record<string, string> = {
+    dragging: styles.draggingRow,
+    dropAbove: styles.dropAbove,
+    dropBelow: styles.dropBelow
+  };
   const catalogById = (id: number | undefined): ICatalogTask | undefined =>
     props.catalog.filter(task => task.id === id)[0];
 
@@ -42,24 +49,9 @@ export default function JobTaskTable(props: IJobTaskTableProps): React.ReactElem
               return (
                 <tr
                   key={link.id}
-                  draggable={!props.disabled}
+                  {...getRowProps(link.id, props.disabled)}
                   title="Давхар товшиж засах; чирж дараалал өөрчлөх"
-                  className={`tw-border-0 tw-border-t tw-border-solid tw-border-gray-200 ${draggedId === link.id ? 'tw-opacity-40' : ''}`}
-                  onDragStart={event => {
-                    event.dataTransfer.effectAllowed = 'move';
-                    event.dataTransfer.setData('text/plain', String(link.id));
-                    setDraggedId(link.id);
-                  }}
-                  onDragEnd={() => setDraggedId(undefined)}
-                  onDragOver={event => event.preventDefault()}
-                  onDrop={event => {
-                    event.preventDefault();
-                    const sourceId = Number(event.dataTransfer.getData('text/plain'));
-                    setDraggedId(undefined);
-                    if (sourceId && sourceId !== link.id) {
-                      props.onReorder(sourceId, link.id);
-                    }
-                  }}
+                  className={`tw-border-0 tw-border-t tw-border-solid tw-border-gray-200 ${styles.dragRow} ${rowClass[getRowState(link.id) || ''] || ''}`}
                   onDoubleClick={() => props.onEdit(link)}
                 >
                   <td className="tw-cursor-grab tw-text-center tw-text-gray-500">☰</td>

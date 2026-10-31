@@ -1,9 +1,16 @@
 import * as React from 'react';
+import { ChoiceGroup } from '@fluentui/react/lib/ChoiceGroup';
+import type { IChoiceGroupOption } from '@fluentui/react/lib/ChoiceGroup';
 import { DefaultButton, IconButton } from '@fluentui/react/lib/Button';
 import { TextField } from '@fluentui/react/lib/TextField';
-import { Toggle } from '@fluentui/react/lib/Toggle';
-import type { IQuestionDraft } from './FormsSetupTypes';
+import type { AnswerType, IQuestionDraft } from './FormsSetupTypes';
 import { newAnswer } from './FormsSetupTypes';
+
+const ANSWER_TYPE_OPTIONS: IChoiceGroupOption[] = [
+  { key: 'choices', text: 'Текст хариултууд' },
+  { key: 'image', text: 'Зураг оруулах талбар' },
+  { key: 'custom', text: 'Өөрийн хариулт (текст оруулах талбар)' }
+];
 
 export interface IQuestionEditorProps {
   question: IQuestionDraft;
@@ -49,17 +56,15 @@ export default function QuestionEditor({ question, index, count, disabled, onCha
       </div>
 
       <div className="tw-ml-8 tw-mt-3">
-        <Toggle
-          inlineLabel
-          label="Хариулт"
-          onText="Зураг оруулах талбар"
-          offText="Текст хариултууд"
+        <ChoiceGroup
+          label="Хариултын төрөл"
           disabled={disabled}
-          checked={question.isImage}
-          onChange={(_, checked) => onChange({ ...question, isImage: !!checked })}
+          selectedKey={question.answerType}
+          options={ANSWER_TYPE_OPTIONS}
+          onChange={(_, option) => option && onChange({ ...question, answerType: option.key as AnswerType })}
         />
 
-        {!question.isImage && (
+        {question.answerType === 'choices' && (
           <div className="tw-mt-2 tw-flex tw-flex-col tw-gap-2">
             {answers.map((answer, answerIndex) => (
               <div key={answer.key} className="tw-flex tw-items-center tw-gap-2">
@@ -109,8 +114,11 @@ export default function QuestionEditor({ question, index, count, disabled, onCha
           </div>
         )}
 
-        {question.isImage && (
+        {question.answerType === 'image' && (
           <p className="tw-mb-0 tw-mt-2 tw-text-sm tw-text-gray-600">Хариуцагч энэ асуултад нэг зураг оруулна.</p>
+        )}
+        {question.answerType === 'custom' && (
+          <p className="tw-mb-0 tw-mt-2 tw-text-sm tw-text-gray-600">Хариуцагч энэ асуултад өөрийн хариултыг бичнэ.</p>
         )}
       </div>
     </section>

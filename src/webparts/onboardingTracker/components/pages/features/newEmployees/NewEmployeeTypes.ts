@@ -5,6 +5,8 @@ export interface INewEmployeeJob {
   title: string;
   // a Gazar, or a Heltes under a Gazar
   departmentId: number | undefined;
+  // a regional job asks which region the employee works in
+  isRegional: boolean;
 }
 
 export interface IUserOption {
@@ -38,6 +40,8 @@ export interface INewEmployeeDraft {
   probationStartDate: string;
   probationEndDate: string;
   jobId: number | undefined;
+  // only filled for regional jobs
+  whichRegion: string;
   // in page order
   ankets: IAnketPage[];
 }
@@ -51,6 +55,8 @@ export interface INewEmployeeData {
   jobs: INewEmployeeJob[];
   departments: IDepartment[];
   users: IUserOption[];
+  // choices of the WhichRegion column
+  regionOptions: string[];
 }
 
 export interface INewEmployeeFields {
@@ -68,6 +74,7 @@ export interface INewEmployeeFields {
   probationStartDate: string;
   probationEndDate: string;
   jobId: string;
+  whichRegion: string;
   anketEmployeeId: string;
   anketImage: string;
   anketIndex: string;
@@ -88,12 +95,13 @@ export const DEFAULT_NEW_EMPLOYEE_FIELDS: INewEmployeeFields = {
   probationStartDate: 'ProbationStartDate',
   probationEndDate: 'ProbationEndDate',
   jobId: 'JobIDId',
+  whichRegion: 'WhichRegion',
   anketEmployeeId: 'NewEmployeeIDId',
   anketImage: 'Image',
   anketIndex: 'Index'
 };
 
-export const EMPTY_NEW_EMPLOYEE_DATA: INewEmployeeData = { employees: [], jobs: [], departments: [], users: [] };
+export const EMPTY_NEW_EMPLOYEE_DATA: INewEmployeeData = { employees: [], jobs: [], departments: [], users: [], regionOptions: [] };
 
 export const EMPTY_DRAFT: INewEmployeeDraft = {
   firstName: '',
@@ -110,6 +118,7 @@ export const EMPTY_DRAFT: INewEmployeeDraft = {
   probationStartDate: '',
   probationEndDate: '',
   jobId: undefined,
+  whichRegion: '',
   ankets: []
 };
 

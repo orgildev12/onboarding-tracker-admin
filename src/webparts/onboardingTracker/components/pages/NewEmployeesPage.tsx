@@ -6,7 +6,7 @@ import NewEmployeeForm from './features/newEmployees/NewEmployeeForm';
 import type { INewEmployeeDraft, INewEmployeeRecord } from './features/newEmployees/NewEmployeeTypes';
 import { useNewEmployees } from './features/newEmployees/useNewEmployees';
 
-type NewEmployeesPageProps = Pick<IOnboardingTrackerProps, 'newEmployeesService' | 'anketsService' | 'jobsService' | 'departmentsService' | 'graphService'>;
+type NewEmployeesPageProps = Pick<IOnboardingTrackerProps, 'newEmployeesService' | 'anketsService' | 'jobsService' | 'departmentsService' | 'graphService' | 'taskGroupProcessService' | 'taskResultsStatusFieldsService' | 'createListService'>;
 
 interface IFormState {
   employee: INewEmployeeRecord | undefined;
@@ -17,9 +17,12 @@ export default function NewEmployeesPage(props: NewEmployeesPageProps): React.Re
   const [form, setForm] = React.useState<IFormState | undefined>();
   const [actionError, setActionError] = React.useState('');
 
-  const jobTitle = (id: number | undefined): string => {
-    const job = data.jobs.filter(j => j.id === id)[0];
-    return job ? job.title : '';
+  const jobTitle = (employee: INewEmployeeRecord): string => {
+    const job = data.jobs.filter(j => j.id === employee.jobId)[0];
+    if (!job) {
+      return '';
+    }
+    return job.isRegional && employee.whichRegion ? `${job.title} (${employee.whichRegion})` : job.title;
   };
   const managerCell = (id: number | undefined): React.ReactNode => {
     const user = data.users.filter(u => u.id === id)[0];
@@ -34,7 +37,7 @@ export default function NewEmployeesPage(props: NewEmployeesPageProps): React.Re
   };
 
   const removeEmployee = (employee: INewEmployeeRecord): void => {
-    if (!window.confirm(`"${employee.lastName} ${employee.firstName}" болон түүний анкетыг устгах уу? Үүнийг буцаах боломжгүй.`)) {
+    if (!window.confirm(`"${employee.lastName} ${employee.firstName}", түүний анкет болон бүх task үр дүн, хариултыг устгах уу? Үүнийг буцаах боломжгүй.`)) {
       return;
     }
     setActionError('');
@@ -73,7 +76,7 @@ export default function NewEmployeesPage(props: NewEmployeesPageProps): React.Re
                   <td>{employee.lastName} {employee.firstName}</td>
                   <td>{employee.phone}</td>
                   <td>{employee.workEmail}</td>
-                  <td>{jobTitle(employee.jobId)}</td>
+                  <td>{jobTitle(employee)}</td>
                   <td>{managerCell(employee.firstLineManagerId)}</td>
                   <td>{employee.probationStartDate} – {employee.probationEndDate}</td>
                   <td>{employee.ankets.length} хуудас</td>
@@ -96,6 +99,7 @@ export default function NewEmployeesPage(props: NewEmployeesPageProps): React.Re
           jobs={data.jobs}
           departments={data.departments}
           users={data.users}
+          regionOptions={data.regionOptions}
           personService={props.newEmployeesService}
           graph={props.graphService}
           onSave={submit}

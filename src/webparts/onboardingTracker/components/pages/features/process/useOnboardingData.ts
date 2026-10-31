@@ -251,9 +251,14 @@ async function loadOnboardingData(
 
   // Task order comes from TasksForJobs: the job's own rows, otherwise its job group's rows.
   const jobGroupOnJob = findLookupField(jobFields, ['JobGroupID', 'JobGroup'], 'JobGroupId');
+  const jobRegionalField = findFieldName(jobFields, ['IsRegional'], 'IsRegional');
   const jobs = new Map(jobItems.map(item => [
     numberValue(item.Id),
-    { title: textValue(item.Title), jobGroupId: readLookupId(item, jobGroupOnJob, ['JobGroupID', 'JobGroup']) }
+    {
+      title: textValue(item.Title),
+      jobGroupId: readLookupId(item, jobGroupOnJob, ['JobGroupID', 'JobGroup']),
+      isRegional: booleanValue(readValue(item, [jobRegionalField]))
+    }
   ]));
   const linkTaskField = findLookupField(linkFields, ['TaskID', 'Task'], 'TaskId');
   const linkJobGroupField = findLookupField(linkFields, ['JobGroupID', 'JobGroup'], 'JobGroupId');
@@ -343,6 +348,7 @@ async function loadOnboardingData(
     probationStart: findFieldName(employeeFields, ['ProbationStartDate'], 'ProbationStartDate'),
     probationEnd: findFieldName(employeeFields, ['ProbationEndDate'], 'ProbationEndDate'),
     job: findLookupField(employeeFields, ['JobID', 'Job'], 'JobId'),
+    whichRegion: findFieldName(employeeFields, ['WhichRegion'], 'WhichRegion'),
     isHistory: findFieldName(employeeFields, ['IsHistory'], 'IsHistory'),
     hasPassed: findFieldName(employeeFields, ['HasPassed', 'IsPassed'], 'HasPassed')
   };
@@ -413,13 +419,14 @@ async function loadOnboardingData(
     const done = tasks.filter(task => task.completed).length;
     const isDelayed = stepStatuses.indexOf('delayed') !== -1 || tasks.some(task => task.status === 'delayed');
     const job = jobId === undefined ? undefined : jobs.get(jobId);
+    const region = textValue(readValue(item, [employeeNameFields.whichRegion])).trim();
     const processStatus: ProcessStatus = isDelayed ? 'delayed' : 'normal';
 
     return {
       id,
       lastName: textValue(readValue(item, [employeeNameFields.lastName])),
       firstName: textValue(readValue(item, [employeeNameFields.firstName])),
-      position: job ? job.title : '',
+      position: job ? (job.isRegional && region ? `${job.title} (${region})` : job.title) : '',
       status: processStatus,
       tasksDone: done,
       tasksTotal: tasks.length,

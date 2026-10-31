@@ -19,6 +19,7 @@ interface IResolved {
   answerText: string;
   answerOrder: string;
   answerImageFlag: string;
+  answerCustomFlag: string;
   // lists whose required Title column is not the one holding the text
   questionNeedsTitle: boolean;
   answerNeedsTitle: boolean;
@@ -33,6 +34,7 @@ export interface IFormsSetup {
 }
 
 const IMAGE_ANSWER_TEXT = 'Зураг';
+const CUSTOM_ANSWER_TEXT = 'Өөрийн хариулт';
 
 const byOrderThenId = (a: { order: number; id: number }, b: { order: number; id: number }): number =>
   a.order - b.order || a.id - b.id;
@@ -69,6 +71,7 @@ export function useFormsSetup({ listService, createListService }: FormsSetupServ
           answerText,
           answerOrder: findFieldName(answerFields, ['Order'], 'Order'),
           answerImageFlag: findFieldName(answerFields, ['IsImageUploadField'], 'IsImageUploadField'),
+          answerCustomFlag: findFieldName(answerFields, ['IsCustomAnswerField'], 'IsCustomAnswerField'),
           questionNeedsTitle: needsTitle(questionFields, questionText),
           answerNeedsTitle: needsTitle(answerFields, answerText)
         };
@@ -118,19 +121,22 @@ export function useFormsSetup({ listService, createListService }: FormsSetupServ
             id: numberValue(answer.Id),
             order: numberValue(readValue(answer, [r.answerOrder])),
             isImage: booleanValue(readValue(answer, [r.answerImageFlag])),
+            isCustom: booleanValue(readValue(answer, [r.answerCustomFlag])),
             text: textValue(readValue(answer, [r.answerText]))
           }))
           .sort(byOrderThenId);
         const image = own.filter(answer => answer.isImage)[0];
+        const custom = own.filter(answer => answer.isCustom && !answer.isImage)[0];
+        const special = image || custom;
         const answers: IAnswerDraft[] = own
-          .filter(answer => !answer.isImage)
+          .filter(answer => !answer.isImage && !answer.isCustom)
           .map(answer => ({ key: newKey(), id: answer.id, text: answer.text }));
         return {
           key: newKey(),
           id,
           text: textValue(readValue(item, [r.questionText])),
-          isImage: !!image,
-          imageAnswerId: image ? image.id : undefined,
+          answerType: image ? 'image' as const : custom ? 'custom' as const : 'choices' as const,
+          specialAnswerId: special ? special.id : undefined,
           answers
         };
       });
@@ -175,11 +181,14 @@ export function useFormsSetup({ listService, createListService }: FormsSetupServ
       }
 
       const previous = original.questions.filter(q => q.id === question.id)[0];
-      const desired: Array<{ id: number | undefined; text: string; isImage: boolean }> = question.isImage
-        ? [{ id: question.imageAnswerId, text: IMAGE_ANSWER_TEXT, isImage: true }]
-        : question.answers
-          .filter(answer => answer.text.trim())
-          .map(answer => ({ id: answer.id, text: answer.text.trim(), isImage: false }));
+      const desired: Array<{ id: number | undefined; text: string; isImage: boolean; isCustom: boolean }> =
+        question.answerType === 'image'
+          ? [{ id: question.specialAnswerId, text: IMAGE_ANSWER_TEXT, isImage: true, isCustom: false }]
+          : question.answerType === 'custom'
+            ? [{ id: question.specialAnswerId, text: CUSTOM_ANSWER_TEXT, isImage: false, isCustom: true }]
+            : question.answers
+              .filter(answer => answer.text.trim())
+              .map(answer => ({ id: answer.id, text: answer.text.trim(), isImage: false, isCustom: false }));
       const keptAnswerIds = desired.map(a => a.id).filter((id): id is number => id !== undefined);
 
       for (const id of previous ? answerIds(previous) : []) {
@@ -193,6 +202,7 @@ export function useFormsSetup({ listService, createListService }: FormsSetupServ
           [r.answerText]: answer.text,
           [r.answerOrder]: i + 1,
           [r.answerImageFlag]: answer.isImage,
+          [r.answerCustomFlag]: answer.isCustom,
           [r.answerQuestion]: questionId
         };
         if (r.answerNeedsTitle) {
@@ -214,5 +224,5 @@ export function useFormsSetup({ listService, createListService }: FormsSetupServ
 
 function answerIds(question: IQuestionDraft): number[] {
   const ids = question.answers.map(answer => answer.id).filter((id): id is number => id !== undefined);
-  return question.imageAnswerId !== undefined ? [...ids, question.imageAnswerId] : ids;
+  return question.specialAnswerId !== undefined ? [...ids, question.specialAnswerId] : ids;
 }

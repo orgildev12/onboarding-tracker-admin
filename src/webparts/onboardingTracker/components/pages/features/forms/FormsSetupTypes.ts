@@ -11,14 +11,16 @@ export interface IAnswerDraft {
   text: string;
 }
 
+export type AnswerType = 'choices' | 'image' | 'custom';
+
 export interface IQuestionDraft {
   key: string;
   id: number | undefined;
   text: string;
-  // true: the employee uploads one image; false: the employee picks one of the text answers
-  isImage: boolean;
-  // existing Answers row that carries IsImageUploadField
-  imageAnswerId: number | undefined;
+  // choices: the employee picks one of the text answers; image: uploads one image; custom: types their own answer
+  answerType: AnswerType;
+  // existing Answers row that carries IsImageUploadField or IsCustomAnswerField
+  specialAnswerId: number | undefined;
   answers: IAnswerDraft[];
 }
 
@@ -39,8 +41,8 @@ export const newQuestion = (): IQuestionDraft => ({
   key: newKey(),
   id: undefined,
   text: '',
-  isImage: false,
-  imageAnswerId: undefined,
+  answerType: 'choices',
+  specialAnswerId: undefined,
   answers: [newAnswer(), newAnswer()]
 });
 
@@ -51,7 +53,7 @@ export function validateForm(draft: IFormDraft): string {
     if (!question.text.trim()) {
       return `${i + 1}-р асуултын текст хоосон байна.`;
     }
-    if (!question.isImage && !question.answers.some(answer => answer.text.trim())) {
+    if (question.answerType === 'choices' && !question.answers.some(answer => answer.text.trim())) {
       return `${i + 1}-р асуултад дор хаяж нэг хариулт оруулна уу.`;
     }
   }

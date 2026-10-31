@@ -60,14 +60,16 @@ async function loadResult(task: IProcessTask, createListService: (listName: stri
       const answers = new Map(answerItems.map(item => [numberValue(item.Id), textValue(item.Answer)]));
       const questionField = findLookupField(fields, ['FormsQuestionID', 'FormsQuestion'], 'FormsQuestionId');
       const answerField = findLookupField(fields, ['AnswerID', 'Answer'], 'AnswerId');
+      const customField = findFieldName(fields, ['CustomAnswer'], 'CustomAnswer');
       return {
         ...EMPTY_RESULT,
         answers: items.map(item => {
           const questionId = readLookupId(item, questionField, ['FormsQuestionID', 'FormsQuestion']);
           const answerId = readLookupId(item, answerField, ['AnswerID', 'Answer']);
+          const customAnswer = textValue(readValue(item, [customField]));
           return {
             question: questionId ? questions.get(questionId) || '' : '',
-            answer: answerId ? answers.get(answerId) || '' : '',
+            answer: customAnswer || (answerId ? answers.get(answerId) || '' : ''),
             image: imageUrl(readValue(item, [imageField]))
           };
         })
@@ -104,7 +106,7 @@ export default function ProcessResultDialog({ task, createListService, onClose }
         {result && result.answers.map((answer, index) => (
           <div key={index} className="tw-mb-2">
             <div className="tw-text-xs tw-text-gray-500">{answer.question}</div>
-            <div>{answer.answer}</div>
+            <div className="tw-whitespace-pre-wrap">{answer.answer}</div>
             {answer.image && <img src={answer.image} alt="" className="tw-mt-1 tw-max-w-full tw-max-h-64" />}
           </div>
         ))}

@@ -317,17 +317,23 @@ export function useJobSettings(services: JobSettingsServices): IJobSettings {
     }));
   };
 
-  const reorderJobTasks: IJobSettings['reorderJobTasks'] = (owner, sourceId, targetId) => mutate(async () => {
+  const reorderJobTasks: IJobSettings['reorderJobTasks'] = (owner, sourceId, targetId) => {
     const tasks = ownerTasks(owner);
     const from = tasks.findIndex(task => task.id === sourceId);
     const to = tasks.findIndex(task => task.id === targetId);
     if (from < 0 || to < 0) {
-      return;
+      return Promise.resolve();
     }
     const [moved] = tasks.splice(from, 1);
     tasks.splice(to, 0, moved);
-    await renumber(tasks);
-  });
+    const newOrder = new Map(tasks.map((task, index) => [task.id, index + 1]));
+    return mutate(() => renumber(tasks), current => ({
+      ...current,
+      jobTasks: current.jobTasks
+        .map(item => newOrder.has(item.id) ? { ...item, order: newOrder.get(item.id) as number } : item)
+        .sort(byOrderThenId)
+    }));
+  };
 
   return { data, loading, error, reload, saveTitle, deleteEntry, setJobGroup, saveJobTask, removeJobTask, reorderJobTasks };
 }
