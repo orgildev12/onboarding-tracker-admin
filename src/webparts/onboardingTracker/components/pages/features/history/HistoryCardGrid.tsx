@@ -13,7 +13,7 @@ export default function HistoryCardGrid({ employees, onSelectEmployee }: IHistor
   }
 
   return (
-    <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 tw-gap-5">
+    <div className="tw-grid tw-gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
       {employees.map(employee => <HistoryCard key={employee.id} employee={employee} onClick={onSelectEmployee} />)}
     </div>
   );

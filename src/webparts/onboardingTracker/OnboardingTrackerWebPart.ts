@@ -31,6 +31,8 @@ export interface IOnboardingTrackerWebPartProps {
 export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnboardingTrackerWebPartProps> {
 
   private _environmentMessage: string = '';
+  // Teams theme ('dark' / 'contrast' count as dark); undefined outside Teams
+  private _teamsDark: boolean | undefined;
 
   public render(): void {
     const listName: string = this.properties.listName || 'Tasks';
@@ -43,6 +45,7 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
       {
         listName,
         isTeamsHost,
+        hostIsDark: this._teamsDark,
         listService: new ListService(this.context.spHttpClient, webUrl, listName),
         taskGroupsService: new ListService(this.context.spHttpClient, webUrl, 'TaskGroups'),
         taskOwnerRolesService: new ListService(this.context.spHttpClient, webUrl, 'TaskOwnerRoles'),
@@ -68,9 +71,27 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
   }
 
   protected onInit(): Promise<void> {
-    return this._getEnvironmentMessage().then(message => {
+    return Promise.all([this._getEnvironmentMessage(), this._watchTeamsTheme()]).then(([message]) => {
       this._environmentMessage = message;
     });
+  }
+
+  // Reads the Teams theme once, then re-renders whenever the user switches it in Teams.
+  private _watchTeamsTheme(): Promise<void> {
+    const teams = this.context.sdks.microsoftTeams;
+    if (!teams) {
+      return Promise.resolve();
+    }
+    const isDark = (theme: string | undefined): boolean => theme === 'dark' || theme === 'contrast';
+    return teams.teamsJs.app.getContext()
+      .then(context => {
+        this._teamsDark = isDark(context.app.theme);
+        teams.teamsJs.app.registerOnThemeChangeHandler(theme => {
+          this._teamsDark = isDark(theme);
+          this.render();
+        });
+      })
+      .catch(() => undefined);
   }
 
 
@@ -102,8 +123,7 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
     return Promise.resolve(this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment);
   }
 
-  // No onThemeChanged override: this app always renders light, regardless of the host's
-  // (SharePoint/Teams) theme, so it never adopts a dark theme variant.
+  // Dark mode follows Teams' theme in Teams and the browser's color scheme elsewhere (see OnboardingTracker).
 
   protected onDispose(): void {
     ReactDom.unmountComponentAtNode(this.domElement);

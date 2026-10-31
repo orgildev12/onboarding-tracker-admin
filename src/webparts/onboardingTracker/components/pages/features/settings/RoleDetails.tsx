@@ -124,7 +124,7 @@ export default function RoleDetails({ role, graph, personService, onAddOwner, on
                   checked
                   readOnly
                   disabled
-                  className="tw-m-0 tw-h-[18px] tw-w-[18px] tw-min-w-[18px] tw-shrink-0 tw-accent-[#777777]"
+                  className="tw-m-0 tw-h-[18px] tw-w-[18px] tw-min-w-[18px] tw-shrink-0 tw-accent-gray-500"
                 />
                 <span>{duty.title}</span>
               </label>

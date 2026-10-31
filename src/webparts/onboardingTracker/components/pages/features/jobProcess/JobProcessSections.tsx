@@ -9,8 +9,8 @@ export interface IJobProcessSectionsProps {
   sections: IJobProcessSection[];
 }
 
-const HEADER_CELL = 'tw-px-4 tw-py-3 tw-text-left tw-text-xs tw-font-semibold tw-align-top tw-border-0 tw-border-r tw-border-b tw-border-solid tw-border-[#BFBFBF]';
-const BODY_CELL = 'tw-px-4 tw-py-3 tw-align-middle tw-break-words tw-border-0 tw-border-b tw-border-r tw-border-solid tw-border-[#DADADA]';
+const HEADER_CELL = 'tw-px-4 tw-py-3 tw-text-left tw-text-xs tw-font-semibold tw-align-top tw-border-0 tw-border-r tw-border-b tw-border-solid tw-border-line';
+const BODY_CELL = 'tw-px-4 tw-py-3 tw-align-middle tw-break-words tw-border-0 tw-border-b tw-border-r tw-border-solid tw-border-line-light';
 const dash =  (value: string): string => value || '—';
 
 function startText(task: IJobProcessTask): string {
@@ -77,10 +77,10 @@ export default function JobProcessSections({ sections }: IJobProcessSectionsProp
               className="tw-flex tw-w-full tw-items-center tw-justify-between tw-border-0 tw-border-b tw-border-solid tw-border-gray-200 tw-bg-white tw-px-4 tw-py-3 tw-text-left tw-text-sm tw-font-semibold tw-cursor-pointer hover:tw-bg-gray-50"
             >
               <span>{section.title || 'Бүлэггүй'}</span>
-              <PageIcon name={isCollapsed ? 'ArrowDown' : 'ArrowUp'} className="tw-h-6 tw-w-6 tw-text-[#292D32]" />
+              <PageIcon name={isCollapsed ? 'ArrowDown' : 'ArrowUp'} className="tw-h-6 tw-w-6 tw-text-ink" />
             </button>
             {!isCollapsed && (
-              <div className="tw-my-4 tw-overflow-x-auto tw-border tw-border-solid tw-border-[#292D32]">
+              <div className="tw-my-4 tw-overflow-x-auto tw-border tw-border-solid tw-border-ink">
                 <table className="tw-w-full tw-min-w-[760px] tw-border-collapse tw-text-xs" style={{ tableLayout: 'fixed' }}>
                   <colgroup>
                     <col style={{ width: '26%' }} />

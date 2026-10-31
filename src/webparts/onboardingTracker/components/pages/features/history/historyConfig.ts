@@ -14,13 +14,13 @@ export const HISTORY_RESULT_CONFIG: Record<HistoryResult, IHistoryResultStyle> =
     label: 'Процесс амжилттай дууссан',
     iconName: 'StatusCircleCheckmark',
     textClass: 'tw-text-gray-500',
-    cardClass: 'tw-bg-white tw-border-gray-300'
+    cardClass: 'tw-bg-white tw-border-line-light'
   },
   failed: {
     label: 'Ажилд ороогүй',
     iconName: 'StatusCircleBlock',
     textClass: 'tw-text-danger',
-    cardClass: 'tw-bg-white tw-border-gray-300'
+    cardClass: 'tw-bg-white tw-border-line-light'
   }
 };
 

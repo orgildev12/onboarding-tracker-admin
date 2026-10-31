@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { IEmployee } from '../../../../models/Employee';
+import { getShortName } from '../../../../utils/employeeFormat';
 import ProgressBar from '../common/ProgressBar';
 import PageIcon from '../common/PageIcon';
 import { PROCESS_STATUS_CONFIG } from '../common/statusConfig';
@@ -12,16 +13,16 @@ export default function EmployeeCard({ employee, onClick }: { employee: IEmploye
       type="button"
       onClick={() => onClick(employee)}
       aria-label={`Open onboarding process for ${employee.firstName} ${employee.lastName}`}
-      className="tw-flex tw-flex-col tw-gap-2 tw-p-4 tw-bg-white tw-rounded tw-shadow-sm tw-border-0 tw-text-left tw-cursor-pointer hover:tw-shadow-md focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-brand"
+      className="tw-flex tw-flex-col tw-gap-2 tw-p-4 tw-bg-white tw-rounded tw-shadow-sm tw-border tw-border-solid tw-border-line-light tw-text-left tw-cursor-pointer hover:tw-shadow-md focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-brand"
     >
-      <div>
-        <div className="tw-flex tw-items-center tw-gap-2 tw-text-sm">
-          <PageIcon name="Contact" className="tw-text-lg" />
-          <span>
-            {employee.lastName} <strong>{employee.firstName}</strong>
-          </span>
+      <div className="tw-flex tw-items-center tw-gap-2">
+        <PageIcon name="Contact" className="tw-shrink-0 tw-text-2xl" />
+        <div className="tw-min-w-0">
+          <div className="tw-text-sm tw-font-semibold tw-leading-tight">
+            {getShortName(employee)}
+          </div>
+          <div className="tw-text-xs tw-font-semibold tw-text-gray-500">{employee.position}</div>
         </div>
-        <div className="tw-ml-7 tw-text-xs tw-text-gray-600">{employee.position}</div>
       </div>
 
       <div className={`tw-flex tw-items-center tw-gap-1 tw-text-xs ${status.cardTextClass}`}>
@@ -32,17 +33,17 @@ export default function EmployeeCard({ employee, onClick }: { employee: IEmploye
       <ProgressBar
         value={employee.progress}
         fillClass={status.progressClass}
-        fillStyle={{ backgroundColor: employee.status === 'delayed' ? '#A10D00' : '#6B7280' }}
+        fillStyle={{ backgroundColor: employee.status === 'delayed' ? '#A10D00' : '#605E5C' }}
       />
 
       <div className="tw-flex tw-justify-between tw-text-xs">
         <div>
-          <div className="tw-font-semibold">Ажилд орох</div>
-          <div className="tw-text-gray-600">{employee.hireDate}</div>
+          <div className="tw-font-medium">Ажилд орох</div>
+          <div className="tw-text-gray-500">{employee.hireDate}</div>
         </div>
         <div className="tw-text-right">
-          <div className="tw-font-semibold">Жинхлэх</div>
-          <div className="tw-text-gray-600">{employee.probationEndDate}</div>
+          <div className="tw-font-medium">Жинхлэх</div>
+          <div className="tw-text-gray-500">{employee.probationEndDate}</div>
         </div>
       </div>
     </button>

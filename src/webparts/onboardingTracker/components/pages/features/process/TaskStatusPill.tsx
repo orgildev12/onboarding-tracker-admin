@@ -24,8 +24,8 @@ interface IPillPalette {
 const teal = (alpha: number): string => `rgba(41, 127, 135, ${alpha})`;
 
 const PILL_PALETTE: Record<TaskStatus, IPillPalette> = {
-  completed: { label: 'Дууссан', border: '#297F87', fill: teal(0.2), hoverFill: teal(0.3), activeFill: teal(0.4), ring: teal(0.3), text: '#292D32' },
-  completedLate: { label: 'Хоцорч дууссан', border: '#297F87', fill: teal(0.2), hoverFill: teal(0.3), activeFill: teal(0.4), ring: teal(0.3), text: '#292D32' },
+  completed: { label: 'Дууссан', border: '#297F87', fill: teal(0.2), hoverFill: teal(0.3), activeFill: teal(0.4), ring: teal(0.3), text: '#323130' },
+  completedLate: { label: 'Хоцорч дууссан', border: '#297F87', fill: teal(0.2), hoverFill: teal(0.3), activeFill: teal(0.4), ring: teal(0.3), text: '#323130' },
   started: {
     label: 'Эхлэсэн',
     border: '#DE8405',
@@ -33,7 +33,7 @@ const PILL_PALETTE: Record<TaskStatus, IPillPalette> = {
     hoverFill: 'rgba(222, 132, 5, 0.3)',
     activeFill: 'rgba(222, 132, 5, 0.4)',
     ring: 'rgba(222, 132, 5, 0.3)',
-    text: '#292D32'
+    text: '#323130'
   },
   delayed: {
     label: 'Хоцорч буй',
@@ -42,16 +42,16 @@ const PILL_PALETTE: Record<TaskStatus, IPillPalette> = {
     hoverFill: 'rgba(161, 13, 0, 0.3)',
     activeFill: 'rgba(161, 13, 0, 0.4)',
     ring: 'rgba(161, 13, 0, 0.3)',
-    text: '#292D32'
+    text: '#323130'
   },
   notStarted: {
     label: 'Эхлээгүй',
-    border: '#BFBFBF',
-    fill: '#F3F3F3',
-    hoverFill: '#E8E8E8',
-    activeFill: '#DADADA',
+    border: 'var(--pill-idle-border, #C8C6C4)',
+    fill: 'var(--pill-idle-fill, #F3F2F1)',
+    hoverFill: 'var(--pill-idle-hover, #EDEBE9)',
+    activeFill: 'var(--pill-idle-active, #E1DFDD)',
     ring: 'rgba(110, 110, 110, 0.3)',
-    text: '#000000'
+    text: '#323130'
   }
 };
 
@@ -81,7 +81,8 @@ export default function TaskStatusPill({ status, timing }: ITaskStatusPillProps)
   const style: React.CSSProperties = {
     backgroundColor: pinned || pressed ? palette.activeFill : hovered ? palette.hoverFill : palette.fill,
     borderColor: palette.border,
-    color: palette.text,
+    // --pill-text is set by the dark mode rules in OnboardingTracker.module.scss
+    color: `var(--pill-text, ${palette.text})`,
     boxShadow: pinned ? `0 0 0 3px ${palette.ring}` : hovered ? '0 1px 4px rgba(0, 0, 0, 0.18)' : 'none',
     transition: 'background-color 120ms, box-shadow 120ms'
   };
@@ -160,14 +161,14 @@ export default function TaskStatusPill({ status, timing }: ITaskStatusPillProps)
         <div
           ref={cardRef}
           role="tooltip"
-          className={`tw-fixed tw-rounded-2xl tw-bg-[#F7F8FB] tw-p-5 tw-text-xs tw-text-[#292D32] tw-shadow-lg ${pinned ? '' : 'tw-pointer-events-none'}`}
+          className={`tw-fixed tw-rounded-2xl tw-bg-card tw-p-5 tw-text-xs tw-text-ink tw-shadow-lg ${pinned ? '' : 'tw-pointer-events-none'}`}
           style={{ left: position.left, top: position.top, width: 'max-content', maxWidth: POPOVER_MAX_WIDTH, zIndex: 100001, fontFamily: CARD_FONT }}
         >
           <div className={`tw-flex tw-items-center tw-gap-2 tw-whitespace-nowrap tw-text-sm tw-font-semibold ${headerClass}`}>
             <PageIcon name={isLate ? 'Clock' : isNotStarted ? 'MinusCircle' : 'Completed'} className="tw-text-lg" />
             <span>{isLate ? `${timing.delayDays} хоног хоцорсон` : isNotStarted ? 'Эхлээгүй' : 'Хэвийн'}</span>
           </div>
-          <hr className="tw-my-3 tw-border-0 tw-border-t tw-border-solid tw-border-[#C8C9D0]" />
+          <hr className="tw-my-3 tw-border-0 tw-border-t tw-border-solid tw-border-line" />
           <div className="tw-mb-3">
             <div className="tw-font-semibold">Зарцуулах хугацаа</div>
             <div className="tw-text-gray-500">{timing.planned}</div>
@@ -178,7 +179,7 @@ export default function TaskStatusPill({ status, timing }: ITaskStatusPillProps)
           </div>
           {isLate && timing.delayReason && (
             <>
-              <hr className="tw-my-3 tw-border-0 tw-border-t tw-border-solid tw-border-[#C8C9D0]" />
+              <hr className="tw-my-3 tw-border-0 tw-border-t tw-border-solid tw-border-line" />
               <div className="tw-font-semibold">Шалтгаан</div>
               <div className="tw-text-gray-500">{timing.delayReason}</div>
             </>

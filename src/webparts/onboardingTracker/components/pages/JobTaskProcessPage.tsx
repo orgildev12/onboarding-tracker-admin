@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Icon } from '@fluentui/react/lib/Icon';
 import type { IOnboardingTrackerProps } from '../IOnboardingTrackerProps';
 import JobSidebar from './features/jobs/JobSidebar';
 import type { IJobOwner } from './features/jobs/JobSettingsTypes';
@@ -82,9 +83,10 @@ export default function JobTaskProcessPage(props: JobTaskProcessPageProps): Reac
                   type="button"
                   aria-expanded={showMembers}
                   onClick={() => setShowMembers(!showMembers)}
-                  className="tw-border-0 tw-bg-transparent tw-p-0 tw-text-xs tw-text-brand tw-underline tw-cursor-pointer"
+                  className="tw-flex tw-items-center tw-gap-2 tw-whitespace-nowrap tw-border-0 tw-bg-transparent tw-p-0 tw-text-sm tw-font-semibold tw-cursor-pointer"
                 >
-                  Хамаарах мэргэжлүүд харах ({members.length})
+                  <Icon iconName={showMembers ? 'ChevronDown' : 'ChevronRight'} className="tw-text-xs" />
+                  <span>Ажлын байрууд ({members.length})</span>
                 </button>
               )}
             </div>

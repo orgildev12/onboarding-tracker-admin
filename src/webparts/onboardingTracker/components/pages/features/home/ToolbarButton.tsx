@@ -20,7 +20,7 @@ export default function ToolbarButton({ iconName, label, title, disabled, iconCl
       aria-label={title ?? label}
       disabled={disabled}
       onClick={onClick}
-      className={`tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-1.5 tw-text-sm tw-rounded tw-border-0 ${
+      className={`tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-1.5 tw-text-sm tw-rounded tw-border tw-border-solid tw-border-line-light ${
         disabled
           ? 'tw-cursor-not-allowed tw-bg-gray-200 tw-text-gray-400 tw-shadow-none'
           : 'tw-bg-white tw-shadow-sm hover:tw-shadow tw-cursor-pointer'

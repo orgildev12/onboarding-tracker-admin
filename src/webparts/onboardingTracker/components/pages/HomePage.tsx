@@ -37,7 +37,7 @@ export default function HomePage(props: IHomePageProps): React.ReactElement {
   }, [isExpanded]);
 
   return (
-    <div className="tw-flex tw-flex-col tw-gap-5 tw-p-5 tw-min-h-full tw-bg-surface">
+    <div className="tw-flex tw-flex-col tw-gap-5 tw-p-5 tw-min-h-full tw-bg-white">
       {!isExpanded && (
         <div className="tw-flex tw-gap-4">
           <QuickLinkCard fluentIconName="History" iconClassName="tw-text-[#F15900]" iconSizeClassName="tw-text-base" label="Түүх" onClick={() => onNavigate('history')} />
@@ -47,7 +47,7 @@ export default function HomePage(props: IHomePageProps): React.ReactElement {
 
       <div
         className={isExpanded
-          ? 'tw-fixed tw-inset-0 tw-z-[1000] tw-flex tw-flex-col tw-gap-5 tw-overflow-auto tw-bg-surface tw-p-5'
+          ? 'tw-fixed tw-inset-0 tw-z-[1000] tw-flex tw-flex-col tw-gap-5 tw-overflow-auto tw-bg-white tw-p-5'
           : 'tw-flex tw-flex-col tw-gap-5'}
       >
         <EmployeeListHeader

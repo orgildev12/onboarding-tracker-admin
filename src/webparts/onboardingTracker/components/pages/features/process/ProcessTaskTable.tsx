@@ -27,8 +27,8 @@ const RESULT_LABELS: Record<TaskResultKind, string> = {
   forms: 'Асуумж харах'
 };
 
-const HEADER_CELL = 'tw-px-4 tw-py-6 tw-text-left tw-text-xs tw-font-semibold tw-border-0 tw-border-r tw-border-solid tw-border-[#BFBFBF]';
-const BODY_CELL = 'tw-px-4 tw-py-3 tw-align-middle tw-border-0 tw-border-b tw-border-r tw-border-solid tw-border-[#DADADA]';
+const HEADER_CELL = 'tw-px-4 tw-py-6 tw-text-left tw-text-xs tw-font-semibold tw-border-0 tw-border-r tw-border-solid tw-border-line';
+const BODY_CELL = 'tw-px-4 tw-py-3 tw-align-middle tw-border-0 tw-border-b tw-border-r tw-border-solid tw-border-line-light';
 
 export interface IProcessTaskTableProps {
   tasks: IProcessTask[];
@@ -79,7 +79,7 @@ export default function ProcessTaskTable({ tasks, createListService, graph, sele
       {resultTask && (
         <ProcessResultDialog task={resultTask} createListService={createListService} onClose={() => setResultTask(undefined)} />
       )}
-      <div className="tw-overflow-x-auto tw-border tw-border-solid tw-border-[#292D32]">
+      <div className="tw-overflow-x-auto tw-border tw-border-solid tw-border-ink">
         <table className="tw-w-full tw-min-w-[800px] tw-border-collapse tw-text-xs" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             <col style={{ width: CHAIN_COLUMN_WIDTH }} />
@@ -126,7 +126,7 @@ export default function ProcessTaskTable({ tasks, createListService, graph, sele
                   )}
                   <td className={BODY_CELL}>
                     <label className="tw-flex tw-items-center tw-gap-3">
-                      <input type="checkbox" checked={task.completed} readOnly className="tw-m-0 tw-h-4 tw-w-4 tw-shrink-0 tw-accent-[#6B6B6B]" />
+                      <input type="checkbox" checked={task.completed} readOnly className="tw-m-0 tw-h-4 tw-w-4 tw-shrink-0 tw-accent-gray-500" />
                       <span>{task.title}</span>
                     </label>
                   </td>

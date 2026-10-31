@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Icon } from '@fluentui/react/lib/Icon';
 import type { IJob } from './JobSettingsTypes';
 
 export interface IJobGroupMembersProps {
@@ -11,9 +12,21 @@ export interface IJobGroupMembersProps {
 
 export default function JobGroupMembers(props: IJobGroupMembersProps): React.ReactElement {
   const [selectedJobId, setSelectedJobId] = React.useState('');
+  const [expanded, setExpanded] = React.useState(false);
 
   return (
     <div>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded(value => !value)}
+        className="tw-mb-2 tw-flex tw-items-center tw-gap-2 tw-border-0 tw-bg-transparent tw-p-0 tw-text-sm tw-font-semibold tw-cursor-pointer"
+      >
+        <Icon iconName={expanded ? 'ChevronDown' : 'ChevronRight'} className="tw-text-xs" />
+        <span>Ажлын байрууд ({props.members.length})</span>
+      </button>
+      {expanded && (
+        <>
       <ul className="tw-m-0 tw-list-disc tw-pl-5 tw-text-sm">
         {props.members.map(job => (
           <li key={job.id} className="tw-py-1">
@@ -53,6 +66,8 @@ export default function JobGroupMembers(props: IJobGroupMembersProps): React.Rea
           + Нэмэх
         </button>
       </div>
+        </>
+      )}
     </div>
   );
 }

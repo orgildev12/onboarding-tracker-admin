@@ -22,7 +22,7 @@ export default function HistoryPage(props: IHistoryPageProps): React.ReactElemen
     useHistoryEmployees(props, query, filter, PAGE_SIZE);
 
   return (
-    <div className="tw-flex tw-flex-col tw-gap-8 tw-p-5 md:tw-p-8 tw-min-h-full tw-bg-surface">
+    <div className="tw-flex tw-flex-col tw-gap-8 tw-p-5 md:tw-p-8 tw-min-h-full tw-bg-white">
       <HistoryHeader
         query={query}
         filter={filter}

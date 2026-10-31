@@ -21,7 +21,7 @@ export default function QuickLinkCard({ iconName, fluentIconName, label, iconCla
     <button
       type="button"
       onClick={onClick}
-      className="tw-flex tw-items-center tw-gap-3 tw-w-[250px] tw-px-5 tw-py-4 tw-bg-white tw-rounded tw-shadow-sm hover:tw-shadow tw-cursor-pointer tw-border-0 tw-text-left"
+      className="tw-flex tw-items-center tw-gap-3 tw-w-[250px] tw-px-5 tw-py-4 tw-bg-white tw-rounded tw-shadow-sm hover:tw-shadow tw-cursor-pointer tw-border tw-border-solid tw-border-line-light tw-text-left"
     >
       {fluentIconName
         ? <Icon iconName={fluentIconName} className={iconClass} />

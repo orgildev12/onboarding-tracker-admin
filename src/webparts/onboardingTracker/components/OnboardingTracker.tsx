@@ -18,8 +18,14 @@ import { getUserRole } from '../services/userRole';
 import type { UserRole } from '../services/userRole';
 import type { IEmployee } from '../models/Employee';
 import PageIcon from './pages/features/common/PageIcon';
+import { Icon } from '@fluentui/react/lib/Icon';
+import { Customizer } from '@fluentui/react/lib/Utilities';
+import { DARK_THEME, readDarkChoice, readSystemDark, saveDarkMode } from './darkTheme';
 
 interface IState {
+  // the user's own choice from the switch; while undefined the host / system color scheme decides
+  darkChoice: boolean | undefined;
+  systemDark: boolean;
   page: string;
   selectedEmployee: IEmployee | undefined;
   // page to return to from the employee process page
@@ -47,9 +53,44 @@ const NAV_ITEMS: INavItem[] = [
 ];
 
 export default class OnboardingTracker extends React.Component<IOnboardingTrackerProps, IState> {
-  public state: IState = { page: 'home', selectedEmployee: undefined, returnPage: 'home', fullscreen: false, role: undefined };
+  public state: IState = {
+    darkChoice: readDarkChoice(),
+    systemDark: readSystemDark(),
+    page: 'home',
+    selectedEmployee: undefined,
+    returnPage: 'home',
+    fullscreen: false,
+    role: undefined
+  };
+
+  private _colorSchemeQuery: MediaQueryList | undefined;
+
+  private _isDark(): boolean {
+    const { darkChoice, systemDark } = this.state;
+    return darkChoice !== undefined ? darkChoice : this.props.hostIsDark !== undefined ? this.props.hostIsDark : systemDark;
+  }
+
+  private _onColorSchemeChange = (event: MediaQueryListEvent): void => {
+    this.setState({ systemDark: event.matches });
+  };
+
+  private _toggleDark = (): void => {
+    const darkChoice = !this._isDark();
+    saveDarkMode(darkChoice);
+    this.setState({ darkChoice });
+  };
+
+  public componentWillUnmount(): void {
+    if (this._colorSchemeQuery) {
+      this._colorSchemeQuery.removeEventListener('change', this._onColorSchemeChange);
+    }
+  }
 
   public componentDidMount(): void {
+    if (typeof window.matchMedia === 'function') {
+      this._colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      this._colorSchemeQuery.addEventListener('change', this._onColorSchemeChange);
+    }
     console.log('[OnboardingTracker] started, checking role for', this.props.userLoginName);
     recordLogin(this.props.loginsService, this.props.userLoginName).catch(() => undefined);
     const timeout = new Promise<never>((_resolve, reject) => setTimeout(() => reject(new Error('15 секундэд хариу ирсэнгүй')), 15000));
@@ -107,11 +148,15 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
 
   public render(): React.ReactElement<IOnboardingTrackerProps> {
     const { fullscreen } = this.state;
+    const dark = this._isDark();
     const { isTeamsHost } = this.props;
+    const headerButton = 'tw-flex tw-h-8 tw-items-center tw-gap-2 tw-rounded tw-border-0 tw-bg-transparent tw-px-3 tw-text-sm tw-font-semibold tw-text-ink tw-cursor-pointer hover:tw-bg-gray-100';
     return (
+      <Customizer settings={dark ? { theme: DARK_THEME } : {}}>
       <div
         className={
           `${styles.onboardingTracker}` +
+          `${dark ? ` ${styles.dark}` : ''}` +
           `${isTeamsHost ? ` ${styles.fillTeamsViewport}` : ''}` +
           `${fullscreen ? ' tw-fixed tw-inset-0 tw-z-[10000] tw-bg-white' : ''}`
         }
@@ -120,11 +165,24 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
           <span className="tw-flex-1">Onboarding process tracker</span>
           <button
             type="button"
+            role="switch"
+            aria-checked={dark}
+            title={dark ? 'Гэрэлтэй горим' : 'Харанхуй горим'}
+            aria-label="Харанхуй горим"
+            onClick={this._toggleDark}
+            className={`${styles.themeSwitch} tw-mr-4`}
+          >
+            <span className={styles.themeKnob}>
+              <Icon iconName={dark ? 'ClearNight' : 'Sunny'} />
+            </span>
+          </button>
+          <button
+            type="button"
             title={fullscreen ? 'Жижигрүүлэх' : 'Бүтэн дэлгэц'}
             aria-label={fullscreen ? 'Жижигрүүлэх' : 'Бүтэн дэлгэц'}
             aria-pressed={fullscreen}
             onClick={() => this.setState({ fullscreen: !fullscreen })}
-            className="tw-flex tw-h-8 tw-items-center tw-gap-2 tw-rounded tw-border-0 tw-bg-transparent tw-px-3 tw-text-sm tw-font-normal tw-text-gray-800 tw-cursor-pointer hover:tw-bg-gray-100"
+            className={headerButton}
           >
             <PageIcon name={fullscreen ? 'FullScreenExit' : 'FullScreen'} className="tw-text-lg tw-text-brand" />
             <span>{fullscreen ? 'Жижигрүүлэх' : 'Бүтэн дэлгэцээр харах'}</span>
@@ -139,6 +197,7 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
           <main className={`${styles.content}${fullscreen ? ' tw-overflow-auto' : ''}`}>{this._renderPage()}</main>
         </div>
       </div>
+      </Customizer>
     );
   }
 }

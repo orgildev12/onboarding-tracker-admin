@@ -16,7 +16,7 @@ const OPTIONS: { mode: ViewMode; label: string; iconName: PageIconName }[] = [
 
 export default function ViewToggle({ value, onChange }: IViewToggleProps): React.ReactElement {
   return (
-    <div className="tw-flex tw-p-0.5 tw-bg-white tw-rounded tw-shadow-sm">
+    <div className="tw-flex tw-p-0.5 tw-bg-white tw-rounded tw-shadow-sm tw-border tw-border-solid tw-border-line-light">
       {OPTIONS.map(option => {
         const active = option.mode === value;
         return (

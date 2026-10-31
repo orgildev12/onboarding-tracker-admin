@@ -16,7 +16,7 @@ export default function EmployeeTable({ employees, steps, onSelectEmployee }: IE
   const gridTemplateColumns = `220px 140px repeat(${visibleIndexes.length}, 150px)`;
 
   return (
-    <div className="tw-overflow-x-auto tw-bg-white tw-rounded tw-shadow-sm">
+    <div className="tw-overflow-x-auto tw-bg-white tw-rounded tw-shadow-sm tw-border tw-border-solid tw-border-line-light">
       <div className="tw-min-w-max tw-py-4">
         <div className="tw-grid tw-items-center tw-border-b tw-border-gray-800" style={{ gridTemplateColumns }}>
           <div className="tw-px-6 tw-py-3 tw-text-sm tw-font-semibold tw-text-center">Шинэ ажилчид</div>

@@ -10,7 +10,7 @@ export default function EmployeeCardGrid({
   onSelectEmployee: (employee: IEmployee) => void;
 }): React.ReactElement {
   return (
-    <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 xl:tw-grid-cols-3 tw-gap-4">
+    <div className="tw-grid tw-gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
       {employees.map(employee => <EmployeeCard key={employee.id} employee={employee} onClick={onSelectEmployee} />)}
     </div>
   );

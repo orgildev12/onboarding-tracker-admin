@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { IHistoryEmployee } from '../../../../models/HistoryEmployee';
+import { getShortName } from '../../../../utils/employeeFormat';
 import PageIcon from '../common/PageIcon';
 import { HISTORY_RESULT_CONFIG } from './historyConfig';
 
@@ -16,15 +17,15 @@ export default function HistoryCard({ employee, onClick }: IHistoryCardProps): R
       type="button"
       onClick={() => onClick(employee)}
       aria-label={`Open onboarding process for ${employee.firstName} ${employee.lastName}`}
-      className={`tw-flex tw-flex-col tw-gap-3 tw-p-4 md:tw-p-5 tw-border tw-border-solid tw-rounded-lg tw-text-left tw-cursor-pointer hover:tw-shadow-md focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-brand ${result.cardClass}`}
+      className={`tw-flex tw-flex-col tw-gap-2 tw-p-4 tw-border tw-border-solid tw-rounded tw-shadow-sm tw-text-left tw-cursor-pointer hover:tw-shadow-md focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-brand ${result.cardClass}`}
     >
-      <div className="tw-flex tw-items-center tw-gap-3">
-        <PageIcon name="Contact" className="tw-text-2xl tw-flex-shrink-0" />
-        <div>
-          <div className="tw-text-sm">
-            {employee.lastName} <strong>{employee.firstName}</strong>
+      <div className="tw-flex tw-items-center tw-gap-2">
+        <PageIcon name="Contact" className="tw-shrink-0 tw-text-2xl" />
+        <div className="tw-min-w-0">
+          <div className="tw-text-sm tw-font-semibold tw-leading-tight">
+            {getShortName(employee)}
           </div>
-          <div className="tw-text-xs tw-text-gray-600">{employee.position}</div>
+          <div className="tw-text-xs tw-font-semibold tw-text-gray-500">{employee.position}</div>
         </div>
       </div>
 
@@ -35,12 +36,12 @@ export default function HistoryCard({ employee, onClick }: IHistoryCardProps): R
 
       <div className="tw-flex tw-justify-between tw-text-xs">
         <div>
-          <div className="tw-font-semibold">Ажилд орсон</div>
-          <div className="tw-text-gray-600">{employee.hireDate}</div>
+          <div className="tw-font-medium">Ажилд орсон</div>
+          <div className="tw-text-gray-500">{employee.hireDate}</div>
         </div>
         <div className="tw-text-right">
-          <div className="tw-font-semibold">Дууссан</div>
-          <div className="tw-text-gray-600">{employee.confirmedDate ?? '...'}</div>
+          <div className="tw-font-medium">Дууссан</div>
+          <div className="tw-text-gray-500">{employee.confirmedDate ?? '...'}</div>
         </div>
       </div>
     </button>

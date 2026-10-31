@@ -3,7 +3,7 @@
   flex-direction: column;
   min-height: 538px;
   background: #fff;
-  // Fixed light-theme color, not derived from the host theme: this app never renders dark.
+  // Fixed light-theme color, not derived from the host theme; the `.dark` rules at the end switch to dark.
   color: #323130;
 }
 
@@ -21,9 +21,9 @@
   height: 58px;
   flex: 0 0 58px;
   padding: 0 32px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e1dfdd;
   background: #fff;
-  color: #111827;
+  color: #201f1e;
   font-size: 15px;
   font-weight: 600;
 }
@@ -32,6 +32,41 @@
   display: flex;
   flex: 1;
   min-height: 480px;
+}
+
+// Light/dark switch: the knob slides right and changes from the amber sun to the teal moon.
+.themeSwitch {
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: #f8e6cc;
+  cursor: pointer;
+  transition: background-color 250ms ease;
+
+  &:focus-visible {
+    outline: 2px solid #de8405;
+    outline-offset: 2px;
+  }
+}
+
+.themeKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #de8405;
+  color: #fff;
+  font-size: 13px;
+  transition: transform 250ms ease, background-color 250ms ease;
 }
 
 .nav {
@@ -131,7 +166,7 @@
 
 .taskGroup {
   margin: 12px 0;
-  border: 1px solid #d1d5db;
+  border: 1px solid #c8c6c4;
   background: #fff;
 }
 
@@ -141,8 +176,8 @@
   justify-content: space-between;
   min-height: 44px;
   padding: 0 12px;
-  background: #f9fafb;
-  border-bottom: 1px solid #d1d5db;
+  background: #faf9f8;
+  border-bottom: 1px solid #e1dfdd;
 }
 
 .groupTitle {
@@ -253,3 +288,154 @@
   gap: 8px;
   margin-top: 16px;
 }
+
+// Dark mode: the app is styled with hard-coded light colors (Tailwind utilities and the rules above),
+// so the dark palette overrides those same classes while `.dark` is on the root element.
+.dark {
+  color-scheme: dark;
+  background: #1f2024;
+  color: #e5e7eb;
+  --pill-text: #f3f4f6;
+  --pill-idle-fill: #2c2d33;
+  --pill-idle-hover: #36373e;
+  --pill-idle-active: #43444c;
+  --pill-idle-border: #52535c;
+
+  .appHeader {
+    border-bottom-color: #36373e;
+    background: #1f2024;
+    color: #f3f4f6;
+  }
+
+  .themeSwitch {
+    background: #12353a;
+  }
+
+  .themeKnob {
+    background: #3fb0b9;
+    color: #0b2428;
+    transform: translateX(28px);
+  }
+
+  .nav {
+    background: #18181b;
+  }
+
+  .navItem:hover {
+    background: #2c2d33;
+  }
+
+  .navItemActive {
+    background: #2c2d33;
+    border-left-color: #3fb0b9;
+  }
+
+  .error {
+    color: #f87171;
+  }
+
+  .form {
+    border-color: #43444c;
+  }
+
+  .table {
+    th, td {
+      border-bottom-color: #36373e;
+    }
+  }
+
+  .taskGroup {
+    border-color: #43444c;
+    background: #1f2024;
+  }
+
+  .taskGroupHeader {
+    background: #26272c;
+    border-bottom-color: #43444c;
+  }
+
+  .dragHandle {
+    color: #a3a8b0;
+  }
+
+  .draggingRow {
+    background: rgba(241, 89, 0, 0.18);
+  }
+
+  .dropAbove > td,
+  .dropBelow > td {
+    background: rgba(241, 89, 0, 0.14);
+  }
+
+  .groupFooter span {
+    color: #a3a8b0;
+  }
+
+  .dialogBackdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  .dialog {
+    background: #26272c;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+
+    input,
+    select {
+      border-color: #5b5c66;
+    }
+  }
+
+  // Native controls follow `color-scheme: dark`; only give inputs a matching surface.
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    background: #26272c;
+    color: #e5e7eb;
+    border-color: #52535c;
+  }
+
+  // Tailwind utilities
+  :global {
+    .tw-bg-white { background-color: #1f2024 !important; }
+    .tw-bg-surface { background-color: #141416 !important; }
+    .tw-bg-gray-50 { background-color: #26272c !important; }
+    .tw-bg-gray-100 { background-color: #2c2d33 !important; }
+    .tw-bg-gray-200 { background-color: #36373e !important; }
+    .tw-bg-gray-300 { background-color: #43444c !important; }
+    .tw-bg-brand-light { background-color: rgba(41, 127, 135, 0.28) !important; }
+    .tw-bg-danger-light { background-color: rgba(161, 13, 0, 0.32) !important; }
+    .tw-bg-warn-light { background-color: rgba(222, 132, 5, 0.28) !important; }
+    .tw-bg-orange-100 { background-color: rgba(241, 89, 0, 0.22) !important; }
+    .tw-bg-card { background-color: #26272c !important; }
+
+    .tw-text-gray-900 { color: #f3f4f6 !important; }
+    .tw-text-gray-800 { color: #e5e7eb !important; }
+    .tw-text-gray-700 { color: #d1d5db !important; }
+    .tw-text-gray-600 { color: #b8bcc3 !important; }
+    .tw-text-gray-500 { color: #a3a8b0 !important; }
+    .tw-text-gray-400 { color: #8b919b !important; }
+    .tw-text-red-700 { color: #f87171 !important; }
+    .tw-text-orange-600 { color: #fb923c !important; }
+    .tw-text-brand { color: #3fb0b9 !important; }
+    .tw-text-danger { color: #f87171 !important; }
+    .tw-text-ink { color: #e5e7eb !important; }
+
+    .tw-border-gray-200 { border-color: #36373e !important; }
+    .tw-border-gray-300 { border-color: #43444c !important; }
+    .tw-border-gray-400 { border-color: #52535c !important; }
+    .tw-border-gray-800 { border-color: #6b6d78 !important; }
+    .tw-border-line { border-color: #4a4b53 !important; }
+    .tw-border-line-light { border-color: #3a3b42 !important; }
+    .tw-border-ink { border-color: #6b6d78 !important; }
+    [class~="tw-divide-gray-200"] > * + * { border-color: #36373e !important; }
+
+    [class~="hover:tw-bg-gray-50"]:hover { background-color: #2c2d33 !important; }
+    [class~="hover:tw-bg-gray-100"]:hover { background-color: #34353c !important; }
+  }
+}
+
+// the fullscreen root also carries tw-bg-white
+.onboardingTracker.dark {
+  background-color: #1f2024 !important;
+}
+

@@ -6,6 +6,8 @@ export interface IOnboardingTrackerProps {
   // true only when hosted as a Teams personal app/tab, where this web part owns the whole tab
   // area (vs. sharing a SharePoint page with other web parts) and should fill the viewport.
   isTeamsHost: boolean;
+  // Teams theme when hosted in Teams (undefined elsewhere: the browser's color scheme is used instead)
+  hostIsDark?: boolean;
   listService: ListService;
   taskGroupsService: ListService;
   taskOwnerRolesService: ListService;

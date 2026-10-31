@@ -49,7 +49,7 @@ export default function ProcessStageAccordion(props: IProcessStageAccordionProps
           <span className="tw-block tw-font-semibold">{isNotStarted ? 'Эхлээгүй' : 'Зарцуулсан хугацаа'}</span>
           <span className="tw-block tw-text-gray-500">{isNotStarted ? '—' : period || '—'}</span>
         </span>
-        <PageIcon name={expanded ? 'ArrowUp' : 'ArrowDown'} className="tw-h-6 tw-w-6 tw-text-[#292D32]" />
+        <PageIcon name={expanded ? 'ArrowUp' : 'ArrowDown'} className="tw-h-6 tw-w-6 tw-text-ink" />
       </button>
       {expanded && (
         tasks.length > 0

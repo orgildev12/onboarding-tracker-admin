@@ -39,14 +39,14 @@ export const STEP_STATUS_CONFIG: Record<StepStatus, IStepStatusStyle> = {
     iconName: 'RefreshCycle',
     halo: false,
     textClass: 'tw-text-brand',
-    nodeClass: 'tw-bg-[rgba(41,127,135,0.2)] tw-text-[#292D32] tw-border tw-border-solid tw-border-brand'
+    nodeClass: 'tw-bg-[rgba(41,127,135,0.2)] tw-text-ink tw-border tw-border-solid tw-border-brand'
   },
   delayed: {
     label: 'Хоцорч буй',
     iconName: 'RefreshCycle',
     halo: false,
     textClass: 'tw-text-danger',
-    nodeClass: 'tw-bg-[rgba(161,13,0,0.2)] tw-text-[#292D32] tw-border tw-border-solid tw-border-danger'
+    nodeClass: 'tw-bg-[rgba(161,13,0,0.2)] tw-text-ink tw-border tw-border-solid tw-border-danger'
   },
   notStarted: {
     label: 'Эхлээгүй',
