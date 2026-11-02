@@ -295,7 +295,7 @@ async function loadOnboardingData(
   const statusStatusField = findFieldName(statusFields, ['Status'], 'Status');
   const statusViableField = findFieldName(statusFields, ['IsViableAction'], 'IsViableAction');
   const statusDateField = (name: string): string => findFieldName(statusFields, [name], name);
-  const statusReasonField = findFieldName(statusFields, ['DelayReason', 'ReasonForDelay', 'Reason', 'Cause'], '');
+  const statusReasonField = findFieldName(statusFields, ['ReasonToLate', 'DelayReason', 'ReasonForDelay', 'Reason', 'Cause'], '');
   const statusRowsByEmployee = new Map<number, IStatusRow[]>();
   statusItems.forEach(item => {
     const ownerId = numberValue(readValue(item, [statusOwnerField]), 0);
@@ -368,10 +368,24 @@ async function loadOnboardingData(
     });
     const nonViableTasks = new Set(rows.filter(row => !row.viable).map(row => row.taskId));
     const assignedTaskIds = tasksForJob(jobId);
-    const taskIds = (assignedTaskIds.length > 0
+    const assignedOrder = new Map<number, number>();
+    assignedTaskIds.forEach((taskId, index) => assignedOrder.set(taskId, index));
+    // Status rows are the source of truth: tasks added to TasksForJobs after the employee was
+    // created never get a row, so they must not show up or count towards the total. Only fall
+    // back to TasksForJobs when the creation flow hasn't produced any rows yet.
+    const taskIds = (rows.length === 0
       ? assignedTaskIds
-      : Array.from(rowByTask.keys()).sort((a, b) =>
-        (taskInfo.get(a)?.orderInGroup ?? 0) - (taskInfo.get(b)?.orderInGroup ?? 0) || a - b))
+      : Array.from(rowByTask.keys()).sort((a, b) => {
+        const aAssigned = assignedOrder.has(a);
+        const bAssigned = assignedOrder.has(b);
+        if (aAssigned !== bAssigned) {
+          return aAssigned ? -1 : 1;
+        }
+        if (aAssigned && bAssigned) {
+          return (assignedOrder.get(a) ?? 0) - (assignedOrder.get(b) ?? 0);
+        }
+        return (taskInfo.get(a)?.orderInGroup ?? 0) - (taskInfo.get(b)?.orderInGroup ?? 0) || a - b;
+      }))
       .filter(taskId => taskInfo.has(taskId) && (!nonViableTasks.has(taskId) || rowByTask.has(taskId)));
 
     const tasksByStep: Record<string, IProcessTask[]> = {};
