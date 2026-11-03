@@ -15,6 +15,7 @@ import type {
 } from './features/test/TaskAdminTypes';
 import { MAX_TASKS_PER_GROUP, TASK_RESULT_TABLE_BY_TYPE } from './features/test/TaskAdminTypes';
 import {
+  booleanValue,
   findFieldName,
   findLookupField,
   numberValue,
@@ -72,6 +73,8 @@ function mapTask(item: ListItem, lookups: ITaskAdminLookups, taskOrderField: str
     taskDefaultBodyText: textValue(item.TaskDefaultBodyText),
     taskGroupId: readLookupId(item, lookups.taskGroupField, ['TaskGroupID', 'TaskGroupId', 'TaskGroup']) || 0,
     taskOrder: numberValue(readValue(item, [taskOrderField, 'TaskOrderInTheGroup'])),
+    isStartOfActualWorkDate: booleanValue(item.IsStartOfActualWorkDate),
+    isInternshipTask: booleanValue(item.IsInternshipTask),
     item
   };
 }
@@ -227,7 +230,8 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
         ? TASK_RESULT_TABLE_BY_TYPE[draft.taskType]
         : draft.handlerType === 'ByOtherSystem' ? draft.taskFieldTableName.trim() || null : null,
       TaskDefaultBodyText: draft.taskDefaultBodyText.trim() || null,
-      [this.state.lookups.taskGroupField]: draft.taskGroupId
+      [this.state.lookups.taskGroupField]: draft.taskGroupId,
+      IsInternshipTask: draft.isInternshipTask
     };
     const numberField = (value: string, label: string): number => {
       const parsed = Number(value);
@@ -240,6 +244,7 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
     if (draft.triggerType === 'ByDate') {
       taskPayload.DayShouldBegin = numberField(draft.dayShouldBegin, 'Day should begin');
       taskPayload.DayShouldEnd = numberField(draft.dayShouldEnd, 'Day should end');
+      taskPayload.IsStartOfActualWorkDate = draft.isStartOfActualWorkDate;
       taskPayload[this.state.lookups.triggerTaskField] = null;
       taskPayload.DayShouldTake = null;
     } else {
@@ -249,6 +254,7 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
       }
       taskPayload.DayShouldBegin = null;
       taskPayload.DayShouldEnd = null;
+      taskPayload.IsStartOfActualWorkDate = null;
       taskPayload[this.state.lookups.triggerTaskField] = triggerTaskId;
       taskPayload.DayShouldTake = numberField(draft.dayShouldTake, 'Day should take');
     }

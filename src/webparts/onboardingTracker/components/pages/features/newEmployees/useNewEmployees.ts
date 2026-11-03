@@ -10,7 +10,7 @@ import { clampPercent, DEFAULT_NEW_EMPLOYEE_FIELDS, EMPTY_NEW_EMPLOYEE_DATA } fr
 type NewEmployeeServices = Pick<
   IOnboardingTrackerProps,
   'newEmployeesService' | 'anketsService' | 'jobsService' | 'departmentsService' |
-  'taskGroupProcessService' | 'taskResultsStatusFieldsService' | 'createListService'
+  'taskGroupProcessService' | 'taskResultsStatusFieldsService' | 'createListService' | 'internshipPlansService'
 >;
 
 // Library that receives uploaded anket images
@@ -22,12 +22,13 @@ export interface INewEmployees {
   loading: boolean;
   error: string;
   reload: () => Promise<void>;
-  save: (id: number | undefined, draft: INewEmployeeDraft, original: INewEmployeeRecord | undefined) => Promise<void>;
+  // resolves to the id of the created / updated employee
+  save: (id: number | undefined, draft: INewEmployeeDraft, original: INewEmployeeRecord | undefined) => Promise<number>;
   remove: (employee: INewEmployeeRecord) => Promise<void>;
 }
 
 export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
-  const { newEmployeesService, anketsService, jobsService, departmentsService, taskGroupProcessService, taskResultsStatusFieldsService, createListService } = services;
+  const { newEmployeesService, anketsService, jobsService, departmentsService, taskGroupProcessService, taskResultsStatusFieldsService, createListService, internshipPlansService } = services;
   const [data, setData] = React.useState<INewEmployeeData>(EMPTY_NEW_EMPLOYEE_DATA);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
@@ -62,6 +63,8 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
       firstLineManager: `${findFieldName(employeeFields, ['FirstLineManager'], 'FirstLineManager')}Id`,
       probationStartDate: findFieldName(employeeFields, ['ProbationStartDate'], d.probationStartDate),
       probationEndDate: findFieldName(employeeFields, ['ProbationEndDate'], d.probationEndDate),
+      workStartDate: findFieldName(employeeFields, ['WorkStartDate'], d.workStartDate),
+      tasksCreated: findFieldName(employeeFields, ['TasksCreated'], d.tasksCreated),
       jobId: findLookupField(employeeFields, ['JobID', 'Job'], d.jobId),
       whichRegion: findFieldName(employeeFields, ['WhichRegion'], d.whichRegion),
       anketEmployeeId: findLookupField(anketFields, ['NewEmployeeID', 'NewEmployee'], d.anketEmployeeId),
@@ -108,6 +111,8 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
         firstLineManagerId: manager > 0 ? manager : undefined,
         probationStartDate: dateOnly(readValue(item, [fields.probationStartDate])),
         probationEndDate: dateOnly(readValue(item, [fields.probationEndDate])),
+        workStartDate: dateOnly(readValue(item, [fields.workStartDate])),
+        tasksCreated: booleanValue(readValue(item, [fields.tasksCreated])),
         jobId: readLookupId(item, fields.jobId, ['JobID', 'Job']),
         whichRegion: textValue(readValue(item, [fields.whichRegion])).trim(),
         ankets
@@ -160,16 +165,16 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
   }, [reload]);
 
   // Runs a change, then always reloads. Errors are re-thrown so dialogs can show them.
-  const mutate = async (action: () => Promise<void>): Promise<void> => {
+  const mutate = async <T>(action: () => Promise<T>): Promise<T> => {
     setError('');
     try {
-      await action();
+      return await action();
     } finally {
       await reload();
     }
   };
 
-  const save = (id: number | undefined, draft: INewEmployeeDraft, original: INewEmployeeRecord | undefined): Promise<void> =>
+  const save = (id: number | undefined, draft: INewEmployeeDraft, original: INewEmployeeRecord | undefined): Promise<number> =>
     mutate(async () => {
       const f = fieldsRef.current;
       const fields: ListItem = {
@@ -185,8 +190,6 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
         [f.judging]: clampPercent(draft.judging),
         [f.workEmail]: draft.workEmail,
         [f.firstLineManager]: draft.firstLineManagerId ?? null,
-        [f.probationStartDate]: draft.probationStartDate ? new Date(draft.probationStartDate).toISOString() : null,
-        [f.probationEndDate]: draft.probationEndDate ? new Date(draft.probationEndDate).toISOString() : null,
         [f.jobId]: draft.jobId ?? null,
         [f.whichRegion]: draft.whichRegion.trim() || null
       };
@@ -219,6 +222,7 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
           ...orderField
         });
       }
+      return employeeId;
     });
 
   // Every list that stores per-employee rows. Rows are deleted before the employee so a failed
@@ -240,6 +244,7 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
       const resultServices = [
         taskResultsStatusFieldsService,
         taskGroupProcessService,
+        internshipPlansService,
         ...resultTables.map(name => createListService(name))
       ];
       for (const service of resultServices) {

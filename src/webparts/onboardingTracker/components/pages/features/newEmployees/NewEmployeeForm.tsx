@@ -90,10 +90,6 @@ export default function NewEmployeeForm({ heading, initial, jobs, departments, u
   const submit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     setError('');
-    if (draft.probationStartDate && draft.probationEndDate && draft.probationEndDate < draft.probationStartDate) {
-      setError('Туршилтын дуусах огноо эхлэх огнооноос өмнө байж болохгүй.');
-      return;
-    }
     setSaving(true);
     try {
       await onSave({ ...draft, whichRegion: isRegional ? draft.whichRegion.trim() : '' });
@@ -176,14 +172,6 @@ export default function NewEmployeeForm({ heading, initial, jobs, departments, u
             />
           </div>
           <span className="tw-hidden sm:tw-block" />
-          <label className={styles.field}>
-            <span>Туршилтын эхлэх огноо *</span>
-            <input type="date" required value={draft.probationStartDate} onChange={event => set('probationStartDate', event.target.value)} />
-          </label>
-          <label className={styles.field}>
-            <span>Туршилтын дуусах огноо *</span>
-            <input type="date" required value={draft.probationEndDate} onChange={event => set('probationEndDate', event.target.value)} />
-          </label>
           {TRAITS.map(trait => (
             <label key={trait.key} className={styles.field}>
               <span>{trait.label} (1-100)</span>

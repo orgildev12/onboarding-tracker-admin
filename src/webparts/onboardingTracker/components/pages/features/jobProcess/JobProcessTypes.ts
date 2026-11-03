@@ -1,4 +1,5 @@
 import type { IDepartment, IJob, IJobGroup, IJobOwner } from '../jobs/JobSettingsTypes';
+import { selectJobLinks } from '../../../../utils/jobTasks';
 
 // A row of the Tasks list with everything the read-only job view needs.
 export interface IProcessCatalogTask {
@@ -71,14 +72,8 @@ export function resolveLinks(data: IJobProcessData, owner: IJobOwner): IProcessL
   if (owner.kind === 'group') {
     return data.links.filter(link => link.jobGroupId === owner.id);
   }
-  const own = data.links.filter(link => link.jobId === owner.id);
-  if (own.length > 0) {
-    return own;
-  }
   const job = data.jobs.filter(item => item.id === owner.id)[0];
-  return job && job.jobGroupId !== undefined
-    ? data.links.filter(link => link.jobGroupId === job.jobGroupId)
-    : [];
+  return selectJobLinks(data.links, owner.id, job ? job.jobGroupId : undefined);
 }
 
 // Tasks of the owner, grouped by task group (in the task groups' order), each group in the owner's task order.

@@ -37,8 +37,6 @@ export interface INewEmployeeDraft {
   judging: number;
   workEmail: string;
   firstLineManagerId: number | undefined;
-  probationStartDate: string;
-  probationEndDate: string;
   jobId: number | undefined;
   // only filled for regional jobs
   whichRegion: string;
@@ -46,8 +44,13 @@ export interface INewEmployeeDraft {
   ankets: IAnketPage[];
 }
 
+// Dates and TasksCreated are set by the field plan step / the flows, never by the employee form.
 export interface INewEmployeeRecord extends INewEmployeeDraft {
   id: number;
+  probationStartDate: string;
+  probationEndDate: string;
+  workStartDate: string;
+  tasksCreated: boolean;
 }
 
 export interface INewEmployeeData {
@@ -73,6 +76,8 @@ export interface INewEmployeeFields {
   firstLineManager: string;
   probationStartDate: string;
   probationEndDate: string;
+  workStartDate: string;
+  tasksCreated: string;
   jobId: string;
   whichRegion: string;
   anketEmployeeId: string;
@@ -94,6 +99,8 @@ export const DEFAULT_NEW_EMPLOYEE_FIELDS: INewEmployeeFields = {
   firstLineManager: 'FirstLineManagerId',
   probationStartDate: 'ProbationStartDate',
   probationEndDate: 'ProbationEndDate',
+  workStartDate: 'WorkStartDate',
+  tasksCreated: 'TasksCreated',
   jobId: 'JobIDId',
   whichRegion: 'WhichRegion',
   anketEmployeeId: 'NewEmployeeIDId',
@@ -115,8 +122,6 @@ export const EMPTY_DRAFT: INewEmployeeDraft = {
   judging: 50,
   workEmail: '',
   firstLineManagerId: undefined,
-  probationStartDate: '',
-  probationEndDate: '',
   jobId: undefined,
   whichRegion: '',
   ankets: []

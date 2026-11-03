@@ -19,6 +19,9 @@ export interface IOnboardingTrackerProps {
   anketsService: ListService;
   taskGroupProcessService: ListService;
   taskResultsStatusFieldsService: ListService;
+  // one row per employee task placed on a day of the field (internship) plan
+  internshipPlansService: ListService;
+  internshipTemplatesService: ListService;
   roleOwnersService: ListService;
   // one row per user: Employee (Person) + LastLoginDate (Date and Time)
   loginsService: ListService;

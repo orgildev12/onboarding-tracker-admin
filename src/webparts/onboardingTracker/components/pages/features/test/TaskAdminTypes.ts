@@ -22,6 +22,8 @@ export interface ITask {
   taskDefaultBodyText: string;
   taskGroupId: number;
   taskOrder: number;
+  isStartOfActualWorkDate: boolean;
+  isInternshipTask: boolean;
   item: ListItem;
 }
 
@@ -38,6 +40,9 @@ export interface ITaskDraft {
   taskFieldTableName: string;
   taskDefaultBodyText: string;
   taskGroupId: number;
+  // ByDate only: count the days from the main work start date instead of the internship start
+  isStartOfActualWorkDate: boolean;
+  isInternshipTask: boolean;
 }
 
 export interface ITaskGroupDraft {
@@ -80,5 +85,7 @@ export const EMPTY_TASK_DRAFT: ITaskDraft = {
   taskType: 'Check',
   taskFieldTableName: '',
   taskDefaultBodyText: '',
-  taskGroupId: 0
+  taskGroupId: 0,
+  isStartOfActualWorkDate: false,
+  isInternshipTask: false
 };

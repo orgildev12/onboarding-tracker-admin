@@ -57,6 +57,8 @@ export default class OnboardingTrackerWebPart extends BaseClientSideWebPart<IOnb
         anketsService: new ListService(this.context.spHttpClient, webUrl, 'Ankets'),
         taskGroupProcessService: new ListService(this.context.spHttpClient, webUrl, 'TaskGroupProcess'),
         taskResultsStatusFieldsService: new ListService(this.context.spHttpClient, webUrl, 'TaskResultsStatusFields'),
+        internshipPlansService: new ListService(this.context.spHttpClient, webUrl, 'InternshipPlansForEmployee'),
+        internshipTemplatesService: new ListService(this.context.spHttpClient, webUrl, 'InternshipTemplateForJobs'),
         roleOwnersService: new ListService(this.context.spHttpClient, webUrl, 'RoleOwners'),
         loginsService: new ListService(this.context.spHttpClient, webUrl, 'Logins'),
         userRolesService: new ListService(this.context.spHttpClient, webUrl, 'UserRoles'),

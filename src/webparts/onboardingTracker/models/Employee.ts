@@ -24,6 +24,9 @@ export interface IEmployee {
   // completed / total tasks the progress is based on
   tasksDone?: number;
   tasksTotal?: number;
+  // false while the field plan has not been turned into the full task list (only tasks 1-3 exist);
+  // undefined (not loaded from NewEmployee) counts as created
+  tasksCreated?: boolean;
   hireDate: string;
   probationEndDate: string;
   // one status per IProcessStep, in the same order

@@ -14,6 +14,7 @@ import {
   textValue
 } from '../../../../utils/listFields';
 import { TASK_RESULT_TABLE_BY_TYPE } from '../test/TaskAdminTypes';
+import { selectJobLinks } from '../../../../utils/jobTasks';
 
 export type OnboardingServices = Pick<
   IOnboardingTrackerProps,
@@ -271,13 +272,11 @@ async function loadOnboardingData(
     order: numberValue(readValue(item, [linkOrderField, 'TaskOrder']))
   }));
   const tasksForJob = (jobId: number | undefined): number[] => {
-    let rows = links.filter(link => jobId !== undefined && link.jobId === jobId);
-    if (rows.length === 0) {
-      const jobGroupId = jobId === undefined ? undefined : jobs.get(jobId)?.jobGroupId;
-      rows = links.filter(link => jobGroupId !== undefined && link.jobGroupId === jobGroupId);
-    }
+    const jobGroupId = jobId === undefined ? undefined : jobs.get(jobId)?.jobGroupId;
+    const rows = selectJobLinks(links, jobId, jobGroupId);
     const seen = new Set<number>();
     return rows
+      .slice()
       .sort((a, b) => a.order - b.order || a.taskId - b.taskId)
       .filter(link => {
         if (!link.taskId || seen.has(link.taskId)) {
@@ -350,7 +349,8 @@ async function loadOnboardingData(
     job: findLookupField(employeeFields, ['JobID', 'Job'], 'JobId'),
     whichRegion: findFieldName(employeeFields, ['WhichRegion'], 'WhichRegion'),
     isHistory: findFieldName(employeeFields, ['IsHistory'], 'IsHistory'),
-    hasPassed: findFieldName(employeeFields, ['HasPassed', 'IsPassed'], 'HasPassed')
+    hasPassed: findFieldName(employeeFields, ['HasPassed', 'IsPassed'], 'HasPassed'),
+    tasksCreated: findFieldName(employeeFields, ['TasksCreated'], 'TasksCreated')
   };
 
   const tasksByEmployee: IOnboardingData['tasksByEmployee'] = {};
@@ -435,6 +435,8 @@ async function loadOnboardingData(
     const job = jobId === undefined ? undefined : jobs.get(jobId);
     const region = textValue(readValue(item, [employeeNameFields.whichRegion])).trim();
     const processStatus: ProcessStatus = isDelayed ? 'delayed' : 'normal';
+    // Tasks 1-3 alone say nothing about progress until the field plan produced the rest of the tasks.
+    const tasksCreated = booleanValue(readValue(item, [employeeNameFields.tasksCreated]));
 
     return {
       id,
@@ -444,7 +446,8 @@ async function loadOnboardingData(
       status: processStatus,
       tasksDone: done,
       tasksTotal: tasks.length,
-      progress: tasks.length === 0 ? 0 : Math.round((done / tasks.length) * 100),
+      progress: tasksCreated && tasks.length > 0 ? Math.round((done / tasks.length) * 100) : 0,
+      tasksCreated,
       hireDate: displayDate(readValue(item, [employeeNameFields.probationStart])),
       probationEndDate: displayDate(readValue(item, [employeeNameFields.probationEnd])),
       steps: stepStatuses,

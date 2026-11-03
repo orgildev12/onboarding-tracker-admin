@@ -35,7 +35,9 @@ function toDraft(task: ITask | undefined, groupId: number): ITaskDraft {
     taskType: task.taskType || EMPTY_TASK_DRAFT.taskType,
     taskFieldTableName: task.taskFieldTableName,
     taskDefaultBodyText: task.taskDefaultBodyText,
-    taskGroupId: task.taskGroupId
+    taskGroupId: task.taskGroupId,
+    isStartOfActualWorkDate: task.isStartOfActualWorkDate,
+    isInternshipTask: task.isInternshipTask
   };
 }
 
@@ -44,7 +46,7 @@ export default function TaskEditor(props: ITaskEditorProps): React.ReactElement 
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState('');
 
-  const set = (key: keyof ITaskDraft, value: string | number): void =>
+  const set = (key: keyof ITaskDraft, value: string | number | boolean): void =>
     setDraft(current => ({ ...current, [key]: value }));
 
   const submit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -95,6 +97,14 @@ export default function TaskEditor(props: ITaskEditorProps): React.ReactElement 
             <label className={styles.field}>
               <span>Day should end *</span>
               <input required type="number" value={draft.dayShouldEnd} onChange={event => set('dayShouldEnd', event.target.value)} />
+            </label>
+            <label className="tw-flex tw-items-center tw-gap-2 tw-text-sm">
+              <input
+                type="checkbox"
+                checked={draft.isStartOfActualWorkDate}
+                onChange={event => set('isStartOfActualWorkDate', event.target.checked)}
+              />
+              <span>Үндсэн ажил эхлэх өдрөөс тоолох</span>
             </label>
           </>
         ) : (
@@ -166,6 +176,15 @@ export default function TaskEditor(props: ITaskEditorProps): React.ReactElement 
             value={draft.taskDefaultBodyText}
             onChange={event => set('taskDefaultBodyText', event.target.value)}
           />
+        </label>
+
+        <label className="tw-flex tw-items-center tw-gap-2 tw-text-sm">
+          <input
+            type="checkbox"
+            checked={draft.isInternshipTask}
+            onChange={event => set('isInternshipTask', event.target.checked)}
+          />
+          <span>Дадлагын task</span>
         </label>
 
         <div className={styles.dialogActions}>
