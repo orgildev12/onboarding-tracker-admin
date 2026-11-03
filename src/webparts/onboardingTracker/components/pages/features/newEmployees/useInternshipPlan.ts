@@ -20,16 +20,17 @@ export type InternshipPlanServices = Pick<
 >;
 
 export const PLAN_DAYS = 5;
+// days shown before "add day" is used
+const INITIAL_DAYS = 4;
 const DELETE_BATCH_SIZE = 10;
 
 export interface IPlanTask {
   taskId: number;
   title: string;
-  // 1..PLAN_DAYS; a task sits on exactly one day
-  day: number;
   trainerId: number | undefined;
 }
 
+// Row N of the plan is day N: the task at position N (0-based) is done on the Nth working day.
 export interface IPlanDay {
   day: number;
   // the Nth working day from the internship start; undefined until that date is entered
@@ -44,11 +45,14 @@ export interface IInternshipPlan {
   error: string;
   notice: string;
   readOnly: boolean;
+  // in day order: tasks[0] is day 1
   tasks: IPlanTask[];
-  // internship tasks of the job that are currently left out of the plan
+  // tasks deliberately left out of the plan, offered for adding back
   removed: IPlanTask[];
   hasJobTasks: boolean;
+  // one entry per task
   days: IPlanDay[];
+  canAddDay: boolean;
   probationStart: string;
   workStart: string;
   // preview of the date the flow writes into ProbationEndDate
@@ -59,25 +63,33 @@ export interface IInternshipPlan {
   setTrainer: (taskId: number, trainerId: number | undefined) => void;
   removeTask: (taskId: number) => void;
   addTask: (taskId: number) => void;
-  moveDay: (taskId: number, delta: number) => void;
-  moveInDay: (taskId: number, delta: number) => void;
+  // adds the next day together with the next task that is not in the plan yet
+  addDay: () => void;
+  // start over with the first tasks, one per day
+  resetPlan: () => void;
+  // drag & drop: the dragged task takes the place of the target task; the days stay where they are
+  dropTask: (sourceId: number, targetId: number) => void;
   save: () => Promise<boolean>;
 }
 
 const clampDay = (value: number): number => Math.min(PLAN_DAYS, Math.max(1, Math.round(value) || 1));
 
 interface ILoadedPlan {
-  // tasks currently in the plan
+  // tasks currently in the plan, in day order
   tasks: IPlanTask[];
-  // every internship task of the employee's job with its default day; the ones not in `tasks` can be added back
+  // the starting plan of a new employee: the first INITIAL_DAYS tasks
+  defaultTasks: IPlanTask[];
+  // every internship task in default order; the ones not in `tasks` can be added
   pool: IPlanTask[];
+  // tasks deliberately left out of a saved plan (offered for adding back)
+  removedIds: number[];
 }
 
 async function loadPlanTasks(services: InternshipPlanServices, employee: INewEmployeeRecord): Promise<ILoadedPlan> {
   const { listService, tasksForJobsService, jobsService, internshipPlansService, internshipTemplatesService } = services;
   const jobId = employee.jobId;
   if (jobId === undefined) {
-    return { tasks: [], pool: [] };
+    return { tasks: [], defaultTasks: [], pool: [], removedIds: [] };
   }
   const planFields = await internshipPlansService.getFields();
   const [taskItems, linkItems, linkFields, jobItems, jobFields, planItems, templateItems, templateFields] = await Promise.all([
@@ -156,23 +168,36 @@ async function loadPlanTasks(services: InternshipPlanServices, employee: INewEmp
     return clampDay(row ? row.day : (internshipTasks.get(taskId) as { dayShouldBegin: number }).dayShouldBegin);
   };
 
-  // tasks that already have a saved row keep the saved order (rows are created in plan order), the rest follow;
-  // once a plan was saved, tasks without a row were deliberately left out and stay out until added back
-  const saved = jobTaskIds.filter(taskId => savedByTask.has(taskId))
-    .sort((a, b) => (savedByTask.get(a)?.id ?? 0) - (savedByTask.get(b)?.id ?? 0));
-  const unsaved = jobTaskIds.filter(taskId => !savedByTask.has(taskId));
+  // Any internship task can be put in the plan (the flow builds the tasks from the plan rows alone);
+  // the job's own ones come first, the others can be added. Each group follows its default day.
+  const byDefaultDay = (ids: number[]): number[] => ids
+    .map((taskId, index) => ({ taskId, index, day: defaultDay(taskId) }))
+    .sort((a, b) => a.day - b.day || a.index - b.index)
+    .map(entry => entry.taskId);
+  const otherTaskIds = Array.from(internshipTasks.keys()).filter(taskId => !seen.has(taskId)).sort((a, b) => a - b);
+  const allTaskIds = byDefaultDay(jobTaskIds).concat(byDefaultDay(otherTaskIds));
+
+  // a saved plan keeps its order (day, then creation order of the rows);
+  // tasks without a row were deliberately left out and stay out until added back
+  const saved = allTaskIds.filter(taskId => savedByTask.has(taskId))
+    .sort((a, b) => {
+      const rowA = savedByTask.get(a) as { id: number; day: number };
+      const rowB = savedByTask.get(b) as { id: number; day: number };
+      return rowA.day - rowB.day || rowA.id - rowB.id;
+    });
   const titleOf = (taskId: number): string => (internshipTasks.get(taskId) as { title: string }).title;
+  const hasSavedPlan = planItems.length > 0;
+  // a first plan starts with the first INITIAL_DAYS internship tasks, one per day; the rest come with "add day"
+  const defaultTasks: IPlanTask[] = allTaskIds.slice(0, INITIAL_DAYS)
+    .map(taskId => ({ taskId, title: titleOf(taskId), trainerId: undefined }));
+  const tasks: IPlanTask[] = hasSavedPlan
+    ? saved.map(taskId => ({ taskId, title: titleOf(taskId), trainerId: (savedByTask.get(taskId) as { trainerId: number | undefined }).trainerId }))
+    : defaultTasks;
   return {
-    tasks: (planItems.length > 0 ? saved : saved.concat(unsaved)).map(taskId => {
-      const row = savedByTask.get(taskId);
-      return {
-        taskId,
-        title: titleOf(taskId),
-        day: row ? row.day : defaultDay(taskId),
-        trainerId: row ? row.trainerId : undefined
-      };
-    }),
-    pool: jobTaskIds.map(taskId => ({ taskId, title: titleOf(taskId), day: defaultDay(taskId), trainerId: undefined }))
+    tasks,
+    defaultTasks,
+    pool: allTaskIds.map(taskId => ({ taskId, title: titleOf(taskId), trainerId: undefined })),
+    removedIds: hasSavedPlan ? allTaskIds.filter(taskId => !savedByTask.has(taskId)) : []
   };
 }
 
@@ -180,6 +205,8 @@ export function useInternshipPlan(services: InternshipPlanServices, employee: IN
   const { newEmployeesService, internshipPlansService } = services;
   const [tasks, setTasks] = React.useState<IPlanTask[]>([]);
   const [pool, setPool] = React.useState<IPlanTask[]>([]);
+  const [defaultTasks, setDefaultTasks] = React.useState<IPlanTask[]>([]);
+  const [removedIds, setRemovedIds] = React.useState<number[]>([]);
   const [probationStart, setProbationStart] = React.useState(employee.probationStartDate);
   const [workStart, setWorkStart] = React.useState(employee.workStartDate);
   const [loading, setLoading] = React.useState(true);
@@ -195,7 +222,15 @@ export function useInternshipPlan(services: InternshipPlanServices, employee: IN
     setLoaded(false);
     setError('');
     loadPlanTasks(services, employee)
-      .then(result => { if (!cancelled) { setTasks(result.tasks); setPool(result.pool); setLoaded(true); } })
+      .then(result => {
+        if (!cancelled) {
+          setTasks(result.tasks);
+          setPool(result.pool);
+          setDefaultTasks(result.defaultTasks);
+          setRemovedIds(result.removedIds);
+          setLoaded(true);
+        }
+      })
       .catch((e: Error) => { if (!cancelled) { setError(e.message); } })
       .then(() => { if (!cancelled) { setLoading(false); } }, () => undefined);
     return () => { cancelled = true; };
@@ -204,54 +239,64 @@ export function useInternshipPlan(services: InternshipPlanServices, employee: IN
 
   const startDay = parseDay(probationStart);
   const workDay = parseDay(workStart);
-  const days: IPlanDay[] = [];
-  for (let day = 1; day <= PLAN_DAYS; day++) {
-    days.push({ day, date: startDay ? nthWorkingDay(startDay, day) : undefined });
-  }
-  const lastPlanDay = days[PLAN_DAYS - 1].date;
+  // Day N is simply row N: the day list is fixed and the tasks are laid over it in order.
+  const days: IPlanDay[] = tasks.map((_task, index) => {
+    const day = Math.min(index + 1, PLAN_DAYS);
+    return { day, date: startDay ? nthWorkingDay(startDay, day) : undefined };
+  });
+  const lastPlanDay = days.length > 0 ? days[days.length - 1].date : undefined;
   const warning = workDay && lastPlanDay && workDay < lastPlanDay
-    ? 'Үндсэн ажил эхлэх өдөр нь дадлагын 5 дахь ажлын өдрөөс өмнө байна.'
+    ? 'Үндсэн ажил эхлэх өдөр нь дадлагын сүүлийн ажлын өдрөөс өмнө байна.'
     : '';
 
   const setTrainer = (taskId: number, trainerId: number | undefined): void =>
     setTasks(current => current.map(task => (task.taskId === taskId ? { ...task, trainerId } : task)));
 
-  const removeTask = (taskId: number): void =>
+  // removing a task closes its row, so the days below move up
+  const removeTask = (taskId: number): void => {
     setTasks(current => current.filter(task => task.taskId !== taskId));
+    setRemovedIds(current => (current.indexOf(taskId) === -1 ? current.concat(taskId) : current));
+  };
 
-  // an added-back task starts from its default day, at the end of that day
-  const addTask = (taskId: number): void =>
-    setTasks(current => {
-      const entry = pool.filter(task => task.taskId === taskId)[0];
-      return entry && !current.some(task => task.taskId === taskId) ? current.concat(entry) : current;
-    });
-  const removed = pool.filter(entry => !tasks.some(task => task.taskId === entry.taskId));
+  const appendTask = (taskId: number): void => {
+    const entry = pool.filter(task => task.taskId === taskId)[0];
+    if (!entry) {
+      return;
+    }
+    setTasks(current => (current.some(task => task.taskId === taskId) || current.length >= PLAN_DAYS
+      ? current
+      : current.concat(entry)));
+    setRemovedIds(current => current.filter(id => id !== taskId));
+  };
+  const removed = removedIds
+    .map(taskId => pool.filter(entry => entry.taskId === taskId)[0])
+    .filter((entry): entry is IPlanTask => entry !== undefined && !tasks.some(task => task.taskId === entry.taskId));
 
-  const moveDay = (taskId: number, delta: number): void =>
-    setTasks(current => {
-      const task = current.filter(item => item.taskId === taskId)[0];
-      const day = task ? clampDay(task.day + delta) : 0;
-      if (!task || day === task.day) {
-        return current;
-      }
-      // goes to the end of the target day
-      return current.filter(item => item.taskId !== taskId).concat({ ...task, day });
-    });
+  const nextTask = pool.filter(entry => !tasks.some(task => task.taskId === entry.taskId))[0];
+  const canAddDay = tasks.length < PLAN_DAYS && nextTask !== undefined;
+  const addDay = (): void => {
+    if (canAddDay) {
+      appendTask(nextTask.taskId);
+    }
+  };
+  const addTask = (taskId: number): void => appendTask(taskId);
 
-  const moveInDay = (taskId: number, delta: number): void =>
+  // back to the starting plan: the first tasks, one per day, no trainers
+  const resetPlan = (): void => {
+    setTasks(defaultTasks);
+    setRemovedIds([]);
+  };
+
+  // the dragged task takes the target's place; the day rows themselves never move
+  const dropTask = (sourceId: number, targetId: number): void =>
     setTasks(current => {
-      const index = current.findIndex(item => item.taskId === taskId);
-      if (index === -1) {
-        return current;
-      }
-      const peers = current.map((task, i) => ({ task, i })).filter(entry => entry.task.day === current[index].day);
-      const other = peers[peers.findIndex(entry => entry.i === index) + delta];
-      if (!other) {
+      const from = current.findIndex(task => task.taskId === sourceId);
+      const to = current.findIndex(task => task.taskId === targetId);
+      if (from === -1 || to === -1 || from === to) {
         return current;
       }
       const next = current.slice();
-      next[index] = current[other.i];
-      next[other.i] = current[index];
+      next.splice(to, 0, next.splice(from, 1)[0]);
       return next;
     });
 
@@ -292,16 +337,15 @@ export function useInternshipPlan(services: InternshipPlanServices, employee: IN
         await Promise.all(existing.slice(i, i + DELETE_BATCH_SIZE).map(row => internshipPlansService.deleteItem(numberValue(row.Id))));
       }
       const owner = `${employee.lastName} ${employee.firstName}`.trim();
-      for (let day = 1; day <= PLAN_DAYS; day++) {
-        for (const task of tasks.filter(item => item.day === day)) {
-          await internshipPlansService.createItem({
-            Title: `${owner} - ${task.title}`,
-            [employeeField]: employee.id,
-            [taskField]: task.taskId,
-            [dayField]: String(day),
-            [trainerField]: task.trainerId ?? null
-          });
-        }
+      for (let index = 0; index < tasks.length; index++) {
+        const task = tasks[index];
+        await internshipPlansService.createItem({
+          Title: `${owner} - ${task.title}`,
+          [employeeField]: employee.id,
+          [taskField]: task.taskId,
+          [dayField]: String(Math.min(index + 1, PLAN_DAYS)),
+          [trainerField]: task.trainerId ?? null
+        });
       }
 
       await newEmployeesService.updateItem(employee.id, {
@@ -320,8 +364,8 @@ export function useInternshipPlan(services: InternshipPlanServices, employee: IN
   };
 
   return {
-    loading, loaded, saving, error, notice, readOnly, tasks, removed, hasJobTasks: pool.length > 0, days, probationStart, workStart,
+    loading, loaded, saving, error, notice, readOnly, tasks, removed, hasJobTasks: pool.length > 0, days, canAddDay, probationStart, workStart,
     probationEnd: startDay ? probationEndDate(startDay) : undefined,
-    warning, setProbationStart, setWorkStart, setTrainer, removeTask, addTask, moveDay, moveInDay, save
+    warning, setProbationStart, setWorkStart, setTrainer, removeTask, addTask, addDay, resetPlan, dropTask, save
   };
 }

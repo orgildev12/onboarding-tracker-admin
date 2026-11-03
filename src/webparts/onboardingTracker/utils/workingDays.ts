@@ -14,6 +14,8 @@ export const toInputDate = (day: Date): string => `${day.getFullYear()}-${pad(da
 
 export const formatDay = (day: Date): string => `${day.getFullYear()}.${pad(day.getMonth() + 1)}.${pad(day.getDate())}`;
 
+export const formatMonthDay = (day: Date): string => `${pad(day.getMonth() + 1)}.${pad(day.getDate())}`;
+
 const isWeekend = (day: Date): boolean => day.getDay() === 0 || day.getDay() === 6;
 
 // Nth (1-based) Mon–Fri day counted from `start`; when start is a weekend, day 1 is the next Monday.

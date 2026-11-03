@@ -1,10 +1,11 @@
 import * as React from 'react';
 import styles from '../../../OnboardingTracker.module.scss';
 import type { GraphService } from '../../../../services/GraphService';
-import { formatDay } from '../../../../utils/workingDays';
+import { formatDay, formatMonthDay } from '../../../../utils/workingDays';
+import { useRowReorder } from '../../../../utils/useRowReorder';
 import PersonPicker from './PersonPicker';
 import type { INewEmployeeRecord, IUserOption } from './NewEmployeeTypes';
-import { PLAN_DAYS, useInternshipPlan } from './useInternshipPlan';
+import { useInternshipPlan } from './useInternshipPlan';
 import type { InternshipPlanServices } from './useInternshipPlan';
 
 export interface IInternshipPlanDialogProps {
@@ -25,7 +26,7 @@ export default function InternshipPlanDialog({ services, employee, users, graph,
   const [addId, setAddId] = React.useState('');
   const busy = plan.loading || plan.saving;
   const error = plan.error || pickerError;
-  const hasStart = plan.days[0].date !== undefined;
+  const hasStart = plan.probationEnd !== undefined;
 
   const submit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -38,48 +39,51 @@ export default function InternshipPlanDialog({ services, employee, users, graph,
     return user ? user.title : '';
   };
 
+  // drop targets in visual order
+  const orderedIds = plan.tasks.map(task => task.taskId);
+  const { getRowProps, getRowState } = useRowReorder(orderedIds, plan.dropTask);
+  const rowClass: Record<string, string> = {
+    dragging: 'tw-opacity-40',
+    dropAbove: 'tw-shadow-[inset_0_3px_0_#ea580c]',
+    dropBelow: 'tw-shadow-[inset_0_-3px_0_#ea580c]'
+  };
+  const locked = plan.readOnly || busy;
+
+  // Two independent columns laid out as a grid so that row N of both has the same height: the left column is the
+  // fixed list of days, the right column the tasks. Dragging only reorders the right column.
   const rows: React.ReactElement[] = [];
-  plan.days.forEach(({ day, date }) => {
-    const dayTasks = plan.tasks.filter(task => task.day === day);
+  plan.tasks.forEach((task, index) => {
+    const { day, date } = plan.days[index];
     rows.push(
-      <tr key={`day-${day}`} className="tw-bg-gray-100">
-        <th colSpan={3} className="tw-px-3 tw-py-1.5 tw-text-left tw-text-sm tw-font-semibold">
-          {day}-р өдөр{date ? ` · ${formatDay(date)} (${WEEKDAYS[date.getDay()]})` : ''}
-        </th>
-      </tr>
+      <div key={`day-${index}`} className="tw-flex tw-items-start tw-gap-2 tw-border-r tw-border-t tw-px-3 tw-py-2">
+        <span className="tw-inline-flex tw-h-7 tw-w-7 tw-shrink-0 tw-items-center tw-justify-center tw-rounded tw-border tw-text-sm tw-font-semibold">{day}</span>
+        {date && <span className="tw-pt-1 tw-text-sm">{formatMonthDay(date)} ({WEEKDAYS[date.getDay()]})</span>}
+      </div>,
+      <div
+        key={`task-${task.taskId}`}
+        {...getRowProps(task.taskId, locked)}
+        className={`tw-flex tw-min-w-0 tw-items-center tw-gap-3 tw-border-t tw-px-3 tw-py-1.5 ${rowClass[getRowState(task.taskId) || ''] || ''}`}
+      >
+        <span className={`${styles.dragHandle} tw-shrink-0`} aria-label="Чирж зөөх" title="Чирж зөөх">☰</span>
+        <span className="tw-min-w-0 tw-flex-1 tw-text-sm">{task.title}</span>
+        <div className="tw-w-[240px] tw-shrink-0">
+          {plan.readOnly ? (
+            <span className="tw-text-sm">{trainerName(task.trainerId) || '-'}</span>
+          ) : (
+            <PersonPicker
+              service={services.newEmployeesService}
+              graph={graph}
+              users={users}
+              selectedId={task.trainerId}
+              onChange={id => plan.setTrainer(task.taskId, id)}
+              onError={setPickerError}
+              ariaLabel="Сургагч"
+            />
+          )}
+        </div>
+        <button type="button" className="tw-shrink-0" disabled={locked} onClick={() => plan.removeTask(task.taskId)}>Хасах</button>
+      </div>
     );
-    if (dayTasks.length === 0) {
-      rows.push(<tr key={`empty-${day}`}><td colSpan={3} className="tw-px-3 tw-py-1.5 tw-text-sm tw-text-gray-500">-</td></tr>);
-    }
-    dayTasks.forEach((task, position) => {
-      rows.push(
-        <tr key={`task-${task.taskId}`}>
-          <td className="tw-px-3 tw-py-1.5 tw-text-sm">{task.title}</td>
-          <td className="tw-whitespace-nowrap tw-px-3 tw-py-1.5">
-            <button type="button" disabled={plan.readOnly || busy || day === 1} onClick={() => plan.moveDay(task.taskId, -1)} aria-label="Өмнөх өдөр рүү" title="Өмнөх өдөр рүү">−</button>{' '}
-            <button type="button" disabled={plan.readOnly || busy || day === PLAN_DAYS} onClick={() => plan.moveDay(task.taskId, 1)} aria-label="Дараагийн өдөр рүү" title="Дараагийн өдөр рүү">+</button>{' '}
-            <button type="button" disabled={plan.readOnly || busy || position === 0} onClick={() => plan.moveInDay(task.taskId, -1)} aria-label="Дээш">↑</button>{' '}
-            <button type="button" disabled={plan.readOnly || busy || position === dayTasks.length - 1} onClick={() => plan.moveInDay(task.taskId, 1)} aria-label="Доош">↓</button>{' '}
-            <button type="button" disabled={plan.readOnly || busy} onClick={() => plan.removeTask(task.taskId)}>Хасах</button>
-          </td>
-          <td className="tw-min-w-[240px] tw-px-3 tw-py-1.5">
-            {plan.readOnly ? (
-              <span className="tw-text-sm">{trainerName(task.trainerId) || '-'}</span>
-            ) : (
-              <PersonPicker
-                service={services.newEmployeesService}
-                graph={graph}
-                users={users}
-                selectedId={task.trainerId}
-                onChange={id => plan.setTrainer(task.taskId, id)}
-                onError={setPickerError}
-                ariaLabel="Сургагч"
-              />
-            )}
-          </td>
-        </tr>
-      );
-    });
   });
 
   return (
@@ -113,26 +117,30 @@ export default function InternshipPlanDialog({ services, employee, users, graph,
 
             {plan.loading && <p className="tw-text-sm tw-text-gray-500">Ачаалж байна...</p>}
             {!plan.loading && plan.loaded && !plan.hasJobTasks && (
-              <p className="tw-text-sm tw-text-gray-500">Энэ ажлын байранд дадлагын task байхгүй.</p>
+              <p className="tw-text-sm tw-text-gray-500">Дадлагын task олдсонгүй. Task засварлагчаас «Дадлагын task»-ыг тэмдэглэнэ үү.</p>
             )}
             {!plan.loading && plan.hasJobTasks && (
               <>
-                <table className="tw-mt-2 tw-w-full tw-border-collapse">
-                  <tbody>{rows}</tbody>
-                </table>
-                {!plan.readOnly && plan.removed.length > 0 && (
-                  <div className="tw-mt-3 tw-flex tw-items-center tw-gap-2">
-                    <select aria-label="Хасагдсан task" value={addId} onChange={event => setAddId(event.target.value)}>
-                      <option value="">Хасагдсан task нэмэх...</option>
-                      {plan.removed.map(task => <option key={task.taskId} value={task.taskId}>{task.title}</option>)}
-                    </select>
-                    <button
-                      type="button"
-                      disabled={busy || !addId}
-                      onClick={() => { plan.addTask(Number(addId)); setAddId(''); }}
-                    >
-                      Нэмэх
-                    </button>
+                <div className="tw-mt-2 tw-grid tw-grid-cols-[11rem_1fr] tw-border-b">{rows}</div>
+                {!plan.readOnly && (
+                  <div className="tw-mt-3 tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+                    <button type="button" disabled={busy || !plan.canAddDay} onClick={plan.addDay}>+ Өдөр нэмэх</button>
+                    <button type="button" disabled={busy} onClick={plan.resetPlan}>Анхны байдалд оруулах</button>
+                    {plan.removed.length > 0 && (
+                      <>
+                        <select aria-label="Хасагдсан task" value={addId} onChange={event => setAddId(event.target.value)}>
+                          <option value="">Хасагдсан task буцааж нэмэх...</option>
+                          {plan.removed.map(task => <option key={task.taskId} value={task.taskId}>{task.title}</option>)}
+                        </select>
+                        <button
+                          type="button"
+                          disabled={busy || !addId}
+                          onClick={() => { plan.addTask(Number(addId)); setAddId(''); }}
+                        >
+                          Нэмэх
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </>
