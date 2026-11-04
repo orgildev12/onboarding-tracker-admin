@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { IOnboardingTrackerProps } from '../../../IOnboardingTrackerProps';
 import type { IEmployee, IProcessStep, ProcessStatus, StepStatus } from '../../../../models/Employee';
+import { STOPPED_HAS_PASSED } from '../../../../models/Employee';
 import type { IProcessPerson, IProcessTask, IProcessTaskTiming, TaskResultKind, TaskStatus } from '../../../../models/OnboardingProcess';
 import type { IListField, ListItem } from '../../../../services/ListService';
 import {
@@ -72,6 +73,18 @@ const RESULT_KIND_BY_TYPE: Record<string, TaskResultKind> = {
 const byOrderThenId = (a: { order: number; id: number }, b: { order: number; id: number }): number =>
   a.order - b.order || a.id - b.id;
 
+// A task group with no TaskGroupProcess row (the automation flow never ran, e.g. a stopped/test
+// employee) falls back to a status derived from its tasks, instead of always "not started".
+function deriveGroupStatus(tasks: IProcessTask[]): StepStatus {
+  if (tasks.some(task => task.status === 'delayed')) {
+    return 'delayed';
+  }
+  if (tasks.every(task => task.completed)) {
+    return tasks.some(task => task.status === 'completedLate') ? 'completedLate' : 'completedOnTime';
+  }
+  return tasks.some(task => task.completed || task.status === 'started') ? 'inProgress' : 'notStarted';
+}
+
 // Expanded Person column: { Id, Title, EMail }
 function personValue(value: unknown): IProcessPerson | undefined {
   if (value && typeof value === 'object' && 'Title' in value) {
@@ -121,6 +134,7 @@ interface ITaskInfo {
   id: number;
   title: string;
   triggerTaskId: number | undefined;
+  startsByDecision: boolean;
   groupId: number;
   orderInGroup: number;
   roleId: number | undefined;
@@ -230,6 +244,7 @@ async function loadOnboardingData(
       triggerTaskId: textValue(item.TriggerType) === 'ByOtherTask'
         ? readLookupId(item, triggerTaskField, ['TriggerTaskID', 'TriggerTask'])
         : undefined,
+      startsByDecision: booleanValue(item.StartsByDecision),
       groupId: readLookupId(item, taskGroupField, ['TaskGroupID', 'TaskGroup']) || 0,
       orderInGroup: numberValue(readValue(item, [taskOrderField, 'TaskOrderInTheGroup'])),
       roleId: readLookupId(item, ownerRoleField, ['TaskOwnerRoleID', 'TaskOwnerRole']),
@@ -358,15 +373,14 @@ async function loadOnboardingData(
     const id = numberValue(item.Id);
     const jobId = readLookupId(item, employeeNameFields.job, ['JobID', 'Job']);
     const rows = statusRowsByEmployee.get(id) || [];
-    const viableRows = rows.filter(row => row.viable);
+    // IsViableAction no longer hides a task; every task with a status row (or assigned via TasksForJobs) is shown.
     const rowByTask = new Map<number, IStatusRow>();
-    viableRows.forEach(row => {
+    rows.forEach(row => {
       const existing = rowByTask.get(row.taskId);
       if (!existing || row.id > existing.id) {
         rowByTask.set(row.taskId, row);
       }
     });
-    const nonViableTasks = new Set(rows.filter(row => !row.viable).map(row => row.taskId));
     const assignedTaskIds = tasksForJob(jobId);
     const assignedOrder = new Map<number, number>();
     assignedTaskIds.forEach((taskId, index) => assignedOrder.set(taskId, index));
@@ -386,7 +400,7 @@ async function loadOnboardingData(
         }
         return (taskInfo.get(a)?.orderInGroup ?? 0) - (taskInfo.get(b)?.orderInGroup ?? 0) || a - b;
       }))
-      .filter(taskId => taskInfo.has(taskId) && (!nonViableTasks.has(taskId) || rowByTask.has(taskId)));
+      .filter(taskId => taskInfo.has(taskId));
 
     const tasksByStep: Record<string, IProcessTask[]> = {};
     const groupsWithTasks = new Set<number>();
@@ -407,6 +421,7 @@ async function loadOnboardingData(
           employeeId: id,
           title: info.title,
           triggerTaskId: info.triggerTaskId,
+          startsByDecision: info.startsByDecision,
           assignees: row && row.owner ? [row.owner] : info.roleId ? ownersByRole.get(info.roleId) || [] : [],
           role: info.roleId ? roleTitles.get(info.roleId) || '' : '',
           status,
@@ -427,14 +442,15 @@ async function loadOnboardingData(
       if (entry) {
         return entry.status;
       }
-      return groupsWithTasks.has(group.id) ? 'notStarted' : 'noProcess';
+      return groupsWithTasks.has(group.id) ? deriveGroupStatus(tasksByStep[String(group.id)] || []) : 'noProcess';
     });
     const tasks = Object.keys(tasksByStep).reduce<IProcessTask[]>((all, key) => all.concat(tasksByStep[key]), []);
     const done = tasks.filter(task => task.completed).length;
     const isDelayed = stepStatuses.indexOf('delayed') !== -1 || tasks.some(task => task.status === 'delayed');
     const job = jobId === undefined ? undefined : jobs.get(jobId);
     const region = textValue(readValue(item, [employeeNameFields.whichRegion])).trim();
-    const processStatus: ProcessStatus = isDelayed ? 'delayed' : 'normal';
+    const hasPassed = textValue(readValue(item, [employeeNameFields.hasPassed])).trim();
+    const processStatus: ProcessStatus = hasPassed === STOPPED_HAS_PASSED ? 'stopped' : isDelayed ? 'delayed' : 'normal';
     // Tasks 1-3 alone say nothing about progress until the field plan produced the rest of the tasks.
     const tasksCreated = booleanValue(readValue(item, [employeeNameFields.tasksCreated]));
 
@@ -452,7 +468,7 @@ async function loadOnboardingData(
       probationEndDate: displayDate(readValue(item, [employeeNameFields.probationEnd])),
       steps: stepStatuses,
       stepPeriods: groups.map(group => process?.get(group.id)?.period || ''),
-      hasPassed: textValue(readValue(item, [employeeNameFields.hasPassed])).trim()
+      hasPassed
     };
   });
 

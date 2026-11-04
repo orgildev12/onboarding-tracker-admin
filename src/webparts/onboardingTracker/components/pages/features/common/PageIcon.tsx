@@ -6,6 +6,7 @@ import {
   SaxClock1Outline,
   SaxClockLinear,
   SaxClock1Linear,
+  SaxCloseCircleOutline,
   SaxEyeLinear,
   SaxDocumentDownloadOutline,
   SaxFilterOutline,
@@ -72,7 +73,8 @@ export type PageIconName =
   | 'RefreshCycle'
   | 'Search'
   | 'StatusCircleBlock'
-  | 'StatusCircleCheckmark';
+  | 'StatusCircleCheckmark'
+  | 'Stopped';
 
 const PAGE_ICONS: Record<PageIconName, React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
   ClockLinear: SaxClockLinear,
@@ -100,7 +102,8 @@ const PAGE_ICONS: Record<PageIconName, React.ComponentType<React.SVGProps<SVGSVG
   RefreshCycle: SaxRefresh2Linear,
   Search: SaxSearchNormal1Outline,
   StatusCircleBlock: SaxMinusCirlceOutline,
-  StatusCircleCheckmark: SaxTickCircleOutline
+  StatusCircleCheckmark: SaxTickCircleOutline,
+  Stopped: SaxCloseCircleOutline
 };
 
 export interface IPageIconProps {

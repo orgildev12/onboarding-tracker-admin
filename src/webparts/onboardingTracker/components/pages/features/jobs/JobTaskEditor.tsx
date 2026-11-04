@@ -1,5 +1,6 @@
 import * as React from 'react';
 import styles from '../../../OnboardingTracker.module.scss';
+import SearchableSelect from '../common/SearchableSelect';
 import type { ICatalogTask, IJobTask, IJobTaskDraft } from './JobSettingsTypes';
 
 export interface IJobTaskEditorProps {
@@ -46,14 +47,13 @@ export default function JobTaskEditor({ task, availableTasks, catalog, onSave, o
         {error && <p className={styles.error} role="alert">{error}</p>}
         <label className={styles.field}>
           <span>Task *</span>
-          <select
-            required
+          <SearchableSelect
             disabled={!!task}
             value={draft.taskId}
-            onChange={event => setDraft({ ...draft, taskId: Number(event.target.value) })}
-          >
-            {taskOptions.map(item => <option key={item.id} value={item.id}>({item.id}) {item.title}</option>)}
-          </select>
+            options={taskOptions.map(item => ({ value: item.id, label: `(${item.id}) ${item.title}` }))}
+            onChange={value => setDraft({ ...draft, taskId: value })}
+            placeholder="Task хайх..."
+          />
         </label>
         <label className={styles.field}>
           <span>TaskBodyText (хоосон бол default текст ашиглана)</span>

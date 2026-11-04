@@ -56,6 +56,7 @@ export default function TaskGroupSection(props: ITaskGroupSectionProps): React.R
                 <col style={{ width: 50 }} />
                 <col style={{ width: 280 }} />
                 <col style={{ width: 110 }} />
+                <col style={{ width: 90 }} />
                 <col style={{ width: 210 }} />
                 <col style={{ width: 170 }} />
                 <col style={{ width: 120 }} />
@@ -69,6 +70,7 @@ export default function TaskGroupSection(props: ITaskGroupSectionProps): React.R
                   <th>ID</th>
                   <th>Title</th>
                   <th>Trigger type</th>
+                  <th>Is start of actual work date</th>
                   <th>Day should begin / trigger task</th>
                   <th>Day should end / day should take</th>
                   <th>Handler type</th>
@@ -90,6 +92,7 @@ export default function TaskGroupSection(props: ITaskGroupSectionProps): React.R
                     <td>{task.id}</td>
                     <td>{task.title}</td>
                     <td>{task.triggerType}</td>
+                    <td>{task.triggerType === 'ByDate' ? (task.isStartOfActualWorkDate ? 'Yes' : 'No') : ''}</td>
                     <td>{task.triggerType === 'ByOtherTask'
                       ? props.taskTitlesById[task.triggerTaskId || 0] || ''
                       : task.dayShouldBegin}</td>
@@ -104,7 +107,7 @@ export default function TaskGroupSection(props: ITaskGroupSectionProps): React.R
                   </tr>
                 ))}
                 {props.tasks.length === 0 && (
-                  <tr><td colSpan={10}>No tasks in this group yet.</td></tr>
+                  <tr><td colSpan={11}>No tasks in this group yet.</td></tr>
                 )}
               </tbody>
             </table>

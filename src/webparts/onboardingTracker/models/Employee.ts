@@ -1,4 +1,7 @@
-export type ProcessStatus = 'normal' | 'delayed';
+export type ProcessStatus = 'normal' | 'delayed' | 'stopped';
+
+// NewEmployee.HasPassed choice meaning the employee never started; the process will not continue.
+export const STOPPED_HAS_PASSED = 'Ажилд ороогүй';
 
 export type StepStatus =
   | 'completedOnTime'

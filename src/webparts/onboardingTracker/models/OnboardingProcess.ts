@@ -14,6 +14,8 @@ export interface IProcessTask {
   title: string;
   // set when the task runs after another task (TriggerType ByOtherTask)
   triggerTaskId: number | undefined;
+  // true when the task's trigger is the hiring-decision task (Tasks.StartsByDecision) instead of triggerTaskId
+  startsByDecision: boolean;
   assignees: IProcessPerson[];
   role: string;
   status: TaskStatus;

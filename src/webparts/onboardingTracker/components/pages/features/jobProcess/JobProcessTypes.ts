@@ -13,6 +13,10 @@ export interface IProcessCatalogTask {
   dayShouldBegin: string;
   dayShouldEnd: string;
   dayShouldTake: string;
+  // ByDate only: counts the days from the main work start date instead of the internship start
+  isStartOfActualWorkDate: boolean;
+  // true when the task's trigger is the hiring-decision task (DECISION_TASK_ID) instead of triggerTaskId
+  startsByDecision: boolean;
 }
 
 export interface IProcessTaskGroup {
@@ -57,6 +61,10 @@ export interface IJobProcessTask {
   dayShouldBegin: string;
   dayShouldEnd: string;
   dayShouldTake: string;
+  // ByDate only: counts the days from the main work start date instead of the internship start
+  isStartOfActualWorkDate: boolean;
+  // true when the task's trigger is the hiring-decision task (DECISION_TASK_ID) instead of triggerTaskId
+  startsByDecision: boolean;
 }
 
 export interface IJobProcessSection {
@@ -112,7 +120,9 @@ export function buildSections(data: IJobProcessData, owner: IJobOwner): IJobProc
       triggerTaskTitle: trigger ? trigger.title : '',
       dayShouldBegin: task.dayShouldBegin,
       dayShouldEnd: task.dayShouldEnd,
-      dayShouldTake: task.dayShouldTake
+      dayShouldTake: task.dayShouldTake,
+      isStartOfActualWorkDate: task.isStartOfActualWorkDate,
+      startsByDecision: task.startsByDecision
     });
   });
 

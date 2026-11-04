@@ -4,6 +4,7 @@ import { TRIGGER_LINES_GUTTER, TriggerLines, triggerRowBackground, useTriggerLin
 import type { ITriggerRelation } from '../common/TriggerLines';
 import type { IJobProcessSection, IJobProcessTask } from './JobProcessTypes';
 import { BY_OTHER_TASK } from './JobProcessTypes';
+import { DECISION_TASK_ID } from '../../../../utils/jobTasks';
 
 export interface IJobProcessSectionsProps {
   sections: IJobProcessSection[];
@@ -33,6 +34,14 @@ function durationText(task: IJobProcessTask): string {
     : `${dash(task.dayShouldBegin)} - ${dash(task.dayShouldEnd)} дэх хоног`;
 }
 
+// "Тийм" when the task's days count from the main work start date, "Үгүй" when they count from the internship start; not applicable for ByOtherTask tasks.
+function startOfActualWorkText(task: IJobProcessTask): string {
+  if (task.triggerType === BY_OTHER_TASK) {
+    return '—';
+  }
+  return task.isStartOfActualWorkDate ? 'Тийм' : 'Үгүй';
+}
+
 export default function JobProcessSections({ sections }: IJobProcessSectionsProps): React.ReactElement {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = React.useState<Record<number, boolean>>({});
@@ -44,9 +53,12 @@ export default function JobProcessSections({ sections }: IJobProcessSectionsProp
   }, [sections]);
   const relations = React.useMemo(() => {
     const result: ITriggerRelation[] = [];
+    const hasDecisionTask = groupOfTask.has(DECISION_TASK_ID);
     sections.forEach(section => section.tasks.forEach(task => {
       if (task.triggerTaskId !== undefined && groupOfTask.has(task.triggerTaskId)) {
         result.push({ sourceId: task.triggerTaskId, targetId: task.taskId });
+      } else if (task.startsByDecision && hasDecisionTask && task.taskId !== DECISION_TASK_ID) {
+        result.push({ sourceId: DECISION_TASK_ID, targetId: task.taskId });
       }
     }));
     return result;
@@ -83,10 +95,11 @@ export default function JobProcessSections({ sections }: IJobProcessSectionsProp
               <div className="tw-my-4 tw-overflow-x-auto tw-border tw-border-solid tw-border-ink">
                 <table className="tw-w-full tw-min-w-[760px] tw-border-collapse tw-text-xs" style={{ tableLayout: 'fixed' }}>
                   <colgroup>
-                    <col style={{ width: '26%' }} />
+                    <col style={{ width: '24%' }} />
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '20%' }} />
+                    <col style={{ width: '10%' }} />
                     <col style={{ width: '16%' }} />
-                    <col style={{ width: '26%' }} />
-                    <col style={{ width: '17%' }} />
                     <col />
                   </colgroup>
                   <thead>
@@ -94,6 +107,7 @@ export default function JobProcessSections({ sections }: IJobProcessSectionsProp
                       <th className={HEADER_CELL}>Ажилууд</th>
                       <th className={HEADER_CELL}>Хариуцагч</th>
                       <th className={HEADER_CELL}>Очих мессеж</th>
+                      <th className={HEADER_CELL}>Оффисд ирэх өдөр</th>
                       <th className={HEADER_CELL}>
                         Эхлэх өдөр / Эхлүүлэх ажилбар
                         <span className="tw-block tw-font-normal tw-text-gray-500">(ажлын өдрөөр)</span>
@@ -125,6 +139,7 @@ export default function JobProcessSections({ sections }: IJobProcessSectionsProp
                           <td className={BODY_CELL}>{task.title}</td>
                           <td className={BODY_CELL}>{dash(task.roleTitle)}</td>
                           <td className={`${BODY_CELL} tw-whitespace-pre-wrap`}>{dash(task.bodyText)}</td>
+                          <td className={BODY_CELL}>{startOfActualWorkText(task)}</td>
                           <td className={BODY_CELL}>{startText(task)}</td>
                           <td className={`${BODY_CELL} tw-border-r-0`}>{durationText(task)}</td>
                         </tr>

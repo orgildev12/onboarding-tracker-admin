@@ -6,6 +6,7 @@ import type { GraphService } from '../../../../services/GraphService';
 import ProcessStageAccordion from './ProcessStageAccordion';
 import { TRIGGER_LINES_GUTTER, TriggerLines, useTriggerLines } from '../common/TriggerLines';
 import type { ITriggerRelation } from '../common/TriggerLines';
+import { DECISION_TASK_ID } from '../../../../utils/jobTasks';
 
 export interface IProcessTimelineProps {
   employee: IEmployee;
@@ -27,9 +28,12 @@ export default function ProcessTimeline({ employee, steps, tasksByStep, createLi
   }, [steps, tasksByStep]);
   const relations = React.useMemo(() => {
     const result: ITriggerRelation[] = [];
+    const hasDecisionTask = stepOfTask.has(DECISION_TASK_ID);
     steps.forEach(step => (tasksByStep[step.key] ?? []).forEach(task => {
       if (task.triggerTaskId !== undefined && stepOfTask.has(task.triggerTaskId)) {
         result.push({ sourceId: task.triggerTaskId, targetId: task.taskId });
+      } else if (task.startsByDecision && hasDecisionTask && task.taskId !== DECISION_TASK_ID) {
+        result.push({ sourceId: DECISION_TASK_ID, targetId: task.taskId });
       }
     }));
     return result;

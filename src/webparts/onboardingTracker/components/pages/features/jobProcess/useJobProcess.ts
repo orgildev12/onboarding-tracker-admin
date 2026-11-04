@@ -95,7 +95,9 @@ async function fetchJobProcess(services: JobProcessServices): Promise<IJobProces
         triggerTaskId: readLookupId(item, triggerTaskLookup, ['TriggerTaskID', 'TriggerTask']),
         dayShouldBegin: textValue(item.DayShouldBegin),
         dayShouldEnd: textValue(item.DayShouldEnd),
-        dayShouldTake: textValue(item.DayShouldTake)
+        dayShouldTake: textValue(item.DayShouldTake),
+        isStartOfActualWorkDate: booleanValue(item.IsStartOfActualWorkDate),
+        startsByDecision: booleanValue(item.StartsByDecision)
       };
     }),
     links: linkItems.map(item => ({

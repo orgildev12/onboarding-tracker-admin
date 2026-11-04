@@ -87,5 +87,14 @@ export const PROCESS_STATUS_CONFIG: Record<ProcessStatus, IProcessStatusStyle> =
     cardIconName: 'Clock',
     progressClass: 'tw-bg-danger',
     processProgressStyle: { background: '#A10D00' }
+  },
+  stopped: {
+    badgeLabel: 'Зогссон',
+    badgeClass: 'tw-bg-gray-200 tw-border-gray-400 tw-text-gray-600',
+    cardLabel: 'Процесс зогссон',
+    cardTextClass: 'tw-text-gray-500',
+    cardIconName: 'Stopped',
+    progressClass: 'tw-bg-gray-400',
+    processProgressStyle: { background: '#8a8886' }
   }
 };

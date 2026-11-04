@@ -1,5 +1,6 @@
 import * as React from 'react';
 import styles from '../../../OnboardingTracker.module.scss';
+import SearchableSelect from '../common/SearchableSelect';
 import type { ITask, ITaskDraft, ITaskGroup, ITaskOwnerRole } from './TaskAdminTypes';
 import {
   EMPTY_TASK_DRAFT,
@@ -111,14 +112,12 @@ export default function TaskEditor(props: ITaskEditorProps): React.ReactElement 
           <>
             <label className={styles.field}>
               <span>Trigger task *</span>
-              <select
-                required
+              <SearchableSelect
                 value={draft.triggerTaskId}
-                onChange={event => set('triggerTaskId', event.target.value)}
-              >
-                <option value="">Select a task</option>
-                {otherTasks.map(task => <option key={task.id} value={task.id}>{task.title}</option>)}
-              </select>
+                options={otherTasks.map(task => ({ value: String(task.id), label: task.title }))}
+                onChange={value => set('triggerTaskId', value)}
+                placeholder="Task хайх..."
+              />
             </label>
             <label className={styles.field}>
               <span>Day should take *</span>
