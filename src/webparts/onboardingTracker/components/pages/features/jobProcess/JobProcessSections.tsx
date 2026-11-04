@@ -55,10 +55,11 @@ export default function JobProcessSections({ sections }: IJobProcessSectionsProp
     const result: ITriggerRelation[] = [];
     const hasDecisionTask = groupOfTask.has(DECISION_TASK_ID);
     sections.forEach(section => section.tasks.forEach(task => {
-      if (task.triggerTaskId !== undefined && groupOfTask.has(task.triggerTaskId)) {
-        result.push({ sourceId: task.triggerTaskId, targetId: task.taskId });
-      } else if (task.startsByDecision && hasDecisionTask && task.taskId !== DECISION_TASK_ID) {
+      // StartsByDecision wins over the task's own trigger whenever task 27 is on the page.
+      if (task.startsByDecision && hasDecisionTask && task.taskId !== DECISION_TASK_ID) {
         result.push({ sourceId: DECISION_TASK_ID, targetId: task.taskId });
+      } else if (task.triggerTaskId !== undefined && groupOfTask.has(task.triggerTaskId)) {
+        result.push({ sourceId: task.triggerTaskId, targetId: task.taskId });
       }
     }));
     return result;
