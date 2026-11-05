@@ -37,7 +37,7 @@ interface IState {
 }
 
 // Pages only role 1 may open.
-const ROLE_1_PAGES: string[] = ['jobSettings', 'formsSetup', 'logins', 'test'];
+const ROLE_1_PAGES: string[] = ['jobSettings', 'logins', 'test'];
 
 // Pages without a nav item are still reachable by setting `page` (e.g. from a button on another page).
 const NAV_ITEMS: INavItem[] = [
