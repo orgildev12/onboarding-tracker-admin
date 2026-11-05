@@ -128,9 +128,9 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
       case 'history':
         return <HistoryPage {...this.props} onSelectEmployee={e => this._showEmployee(e, 'history')} />;
       case 'newEmployees':
-        return <NewEmployeesPage {...this.props} />;
+        return <NewEmployeesPage {...this.props} role={this.state.role} />;
       case 'settings':
-        return <SettingsPage {...this.props} />;
+        return <SettingsPage {...this.props} role={this.state.role} />;
       case 'jobSettings':
         return <JobSettingsPage {...this.props} />;
       case 'jobTaskProcess':

@@ -12,11 +12,13 @@ export interface ISearchableSelectProps<T extends string | number> {
   onChange: (value: T) => void;
   placeholder?: string;
   disabled?: boolean;
+  // extra classes for the text input, e.g. to make it taller/wider than the default
+  inputClassName?: string;
 }
 
 // A text input that filters a long option list as the user types, for <select>s with too many options to scan.
 export default function SearchableSelect<T extends string | number>(
-  { value, options, onChange, placeholder, disabled }: ISearchableSelectProps<T>
+  { value, options, onChange, placeholder, disabled, inputClassName }: ISearchableSelectProps<T>
 ): React.ReactElement {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
@@ -66,6 +68,7 @@ export default function SearchableSelect<T extends string | number>(
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"
+        className={inputClassName}
       />
       {open && (
         <ul className={styles.comboBoxList} role="listbox">

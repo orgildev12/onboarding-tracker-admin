@@ -3,6 +3,7 @@ import styles from '../../../OnboardingTracker.module.scss';
 import type { ListService } from '../../../../services/ListService';
 import type { GraphService } from '../../../../services/GraphService';
 import type { IDepartment } from '../jobs/JobSettingsTypes';
+import PageIcon from '../common/PageIcon';
 import PersonPicker from './PersonPicker';
 import type { IAnketPage, INewEmployeeDraft, INewEmployeeJob, IUserOption } from './NewEmployeeTypes';
 import { clampPercent, EMPTY_DRAFT } from './NewEmployeeTypes';
@@ -16,6 +17,10 @@ export interface INewEmployeeFormProps {
   regionOptions: string[];
   personService: ListService;
   graph: GraphService;
+  // true once the field plan has been entered for this employee; shows an "edit plan" section
+  // instead of the row-level "Талбарын төлөвлөгөө" button, which is hidden at that point
+  planEntered?: boolean;
+  onOpenPlan?: () => void;
   onSave: (draft: INewEmployeeDraft) => Promise<void>;
   onCancel: () => void;
 }
@@ -42,7 +47,7 @@ function initialSelection(initial: INewEmployeeDraft | undefined, jobs: INewEmpl
   return department.gazarId ? { gazar: String(department.gazarId), heltes: String(department.id) } : { gazar: '', heltes: '' };
 }
 
-export default function NewEmployeeForm({ heading, initial, jobs, departments, users, regionOptions, personService, graph, onSave, onCancel }: INewEmployeeFormProps): React.ReactElement {
+export default function NewEmployeeForm({ heading, initial, jobs, departments, users, regionOptions, personService, graph, planEntered, onOpenPlan, onSave, onCancel }: INewEmployeeFormProps): React.ReactElement {
   const [draft, setDraft] = React.useState<INewEmployeeDraft>(initial || EMPTY_DRAFT);
   const [gazar, setGazar] = React.useState(() => initialSelection(initial, jobs, departments).gazar);
   const [heltes, setHeltes] = React.useState(() => initialSelection(initial, jobs, departments).heltes);
@@ -201,6 +206,20 @@ export default function NewEmployeeForm({ heading, initial, jobs, departments, u
             </li>
           ))}
         </ol>
+
+        {planEntered && onOpenPlan && (
+          <div className="tw-mt-4 tw-flex tw-items-center tw-justify-between tw-rounded tw-border tw-border-solid tw-border-gray-300 tw-p-3">
+            <span className="tw-text-sm tw-font-semibold">Талбарын төлөвлөгөө</span>
+            <button
+              type="button"
+              onClick={onOpenPlan}
+              className="tw-flex tw-items-center tw-gap-1.5 tw-rounded tw-border-0 tw-bg-transparent tw-px-2 tw-py-1 tw-text-sm tw-text-brand tw-cursor-pointer hover:tw-bg-gray-50"
+            >
+              <PageIcon name="EyeLinear" className="tw-text-base" />
+              Харах
+            </button>
+          </div>
+        )}
 
         <div className={styles.dialogActions}>
           <button type="submit" disabled={saving || !draft.firstName.trim() || !draft.lastName.trim()}>{saving ? 'Хадгалж байна...' : 'Хадгалах'}</button>

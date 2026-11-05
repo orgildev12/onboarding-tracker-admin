@@ -16,6 +16,10 @@ type NewEmployeeServices = Pick<
 // Library that receives uploaded anket images
 const IMAGE_LIBRARY = 'SiteAssets';
 const DELETE_BATCH_SIZE = 10;
+// TaskID 43 marks the end of the whole onboarding process; once its status is "Дууссан" the
+// employee is only shown to Role 1 (separated below a divider), not to other roles.
+const PROCESS_FINISHED_TASK_ID = 43;
+const PROCESS_FINISHED_STATUS_TEXT = 'Дууссан';
 
 export interface INewEmployees {
   data: INewEmployeeData;
@@ -35,7 +39,7 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
   const fieldsRef = React.useRef<INewEmployeeFields>(DEFAULT_NEW_EMPLOYEE_FIELDS);
 
   const fetchData = React.useCallback(async (): Promise<INewEmployeeData> => {
-    const [employeeItems, employeeFields, anketItems, anketFields, jobItems, jobFields, departmentItems, departmentFields, users] = await Promise.all([
+    const [employeeItems, employeeFields, anketItems, anketFields, jobItems, jobFields, departmentItems, departmentFields, users, taskStatusFields] = await Promise.all([
       newEmployeesService.getAllItems(),
       newEmployeesService.getFields(),
       anketsService.getAllItems(),
@@ -44,8 +48,22 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
       jobsService.getFields(),
       departmentsService.getItems(),
       departmentsService.getFields(),
-      newEmployeesService.getSiteUsers()
+      newEmployeesService.getSiteUsers(),
+      taskResultsStatusFieldsService.getFields()
     ]);
+
+    // Only TaskID 43's rows are needed here, so they are read with a single indexed filter
+    // instead of pulling every TaskResultsStatusFields row (which grows by ~50 per employee).
+    const taskStatusTaskField = findLookupField(taskStatusFields, ['TaskID', 'Task'], 'TaskId');
+    const taskStatusEmployeeField = findLookupField(taskStatusFields, ['NewEmployeeID', 'NewEmployee'], 'NewEmployeeId');
+    const taskStatusStatusField = findFieldName(taskStatusFields, ['Status'], 'Status');
+    const processFinishedTaskItems = await taskResultsStatusFieldsService.getAllItems(`${taskStatusTaskField} eq ${PROCESS_FINISHED_TASK_ID}`);
+    const processFinishedEmployeeIds = new Set(
+      processFinishedTaskItems
+        .filter(item => textValue(readValue(item, [taskStatusStatusField])).trim() === PROCESS_FINISHED_STATUS_TEXT)
+        .map(item => readLookupId(item, taskStatusEmployeeField, ['NewEmployeeID', 'NewEmployee']))
+        .filter((employeeId): employeeId is number => !!employeeId)
+    );
 
     const d = DEFAULT_NEW_EMPLOYEE_FIELDS;
     const fields: INewEmployeeFields = {
@@ -115,7 +133,8 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
         tasksCreated: booleanValue(readValue(item, [fields.tasksCreated])),
         jobId: readLookupId(item, fields.jobId, ['JobID', 'Job']),
         whichRegion: textValue(readValue(item, [fields.whichRegion])).trim(),
-        ankets
+        ankets,
+        processFinished: processFinishedEmployeeIds.has(id)
       };
     });
 
@@ -146,7 +165,7 @@ export function useNewEmployees(services: NewEmployeeServices): INewEmployees {
         .sort((a, b) => a.title.localeCompare(b.title)),
       regionOptions
     };
-  }, [newEmployeesService, anketsService, jobsService, departmentsService]);
+  }, [newEmployeesService, anketsService, jobsService, departmentsService, taskResultsStatusFieldsService]);
 
   const reload = React.useCallback(async (): Promise<void> => {
     setLoading(true);

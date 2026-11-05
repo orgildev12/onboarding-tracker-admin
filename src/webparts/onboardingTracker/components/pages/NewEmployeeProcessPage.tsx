@@ -36,7 +36,7 @@ export default function NewEmployeeProcessPage(props: INewEmployeeProcessPagePro
 
       {employee && (
         <>
-          <EmployeeProcessSummary employee={employee} />
+          <EmployeeProcessSummary employee={employee} services={props} graph={props.graphService} />
 
           <ProcessTimeline
             employee={employee}

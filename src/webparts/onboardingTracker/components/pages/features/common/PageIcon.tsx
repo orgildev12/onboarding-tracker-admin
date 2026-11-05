@@ -2,11 +2,14 @@ import * as React from 'react';
 import {
   SaxArrowDownLinear,
   SaxArrowLeft2Outline,
+  SaxArrowRightLinear,
   SaxArrowUp1Linear,
+  SaxCalendarOutline,
   SaxClock1Outline,
   SaxClockLinear,
   SaxClock1Linear,
   SaxCloseCircleOutline,
+  SaxEditOutline,
   SaxEyeLinear,
   SaxDocumentDownloadOutline,
   SaxFilterOutline,
@@ -21,7 +24,8 @@ import {
   SaxSearchNormal1Outline,
   SaxSecurityUserOutline,
   SaxTickCircleBold,
-  SaxTickCircleOutline
+  SaxTickCircleOutline,
+  SaxTrashOutline
 } from '@meysam213/iconsax-react';
 
 // Icons that iconsax does not provide.
@@ -54,12 +58,15 @@ export type PageIconName =
   | 'FullScreenExit'
   | 'ArrowDown'
   | 'ArrowLeft'
+  | 'ArrowRight'
   | 'ArrowUp'
   | 'CheckFilled'
   | 'CheckMark'
   | 'Clock'
   | 'Completed'
   | 'Contact'
+  | 'Delete'
+  | 'Edit'
   | 'ExcelDocument'
   | 'Filter'
   | 'FullScreen'
@@ -68,6 +75,7 @@ export type PageIconName =
   | 'List'
   | 'MinusCircle'
   | 'Permissions'
+  | 'Plan'
   | 'PositionGroup'
   | 'Refresh'
   | 'RefreshCycle'
@@ -83,12 +91,15 @@ const PAGE_ICONS: Record<PageIconName, React.ComponentType<React.SVGProps<SVGSVG
   FullScreenExit: FullScreenExitIcon,
   ArrowDown: SaxArrowDownLinear,
   ArrowLeft: SaxArrowLeft2Outline,
+  ArrowRight: SaxArrowRightLinear,
   ArrowUp: SaxArrowUp1Linear,
   CheckFilled: SaxTickCircleBold,
   CheckMark: SaxTickCircleOutline,
   Clock: SaxClock1Linear,
   Completed: SaxTickCircleOutline,
   Contact: SaxProfileCircleOutline,
+  Delete: SaxTrashOutline,
+  Edit: SaxEditOutline,
   ExcelDocument: SaxDocumentDownloadOutline,
   Filter: SaxFilterOutline,
   FullScreen: SaxMaximize3Outline,
@@ -97,6 +108,7 @@ const PAGE_ICONS: Record<PageIconName, React.ComponentType<React.SVGProps<SVGSVG
   List: SaxRowVerticalOutline,
   MinusCircle: SaxMinusCirlceOutline,
   Permissions: SaxSecurityUserOutline,
+  Plan: SaxCalendarOutline,
   PositionGroup: SaxHierarchy3Outline,
   Refresh: SaxRefreshOutline,
   RefreshCycle: SaxRefresh2Linear,

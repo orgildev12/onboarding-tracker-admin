@@ -21,3 +21,13 @@ export interface IPositionRole {
   // tasks that belong to this role (Tasks.TaskOwnerRoleID)
   duties: IPositionDuty[];
 }
+
+// Every Tasks row, used to offer tasks that can be assigned to a role as a duty.
+// A task's TaskOwnerRoleID is a single lookup, so assigning it to a role always
+// un-assigns it from whatever role (if any) it belonged to before.
+export interface ITaskOption {
+  id: number;
+  title: string;
+  roleId: number | undefined;
+}
+

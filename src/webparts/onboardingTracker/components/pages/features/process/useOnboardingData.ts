@@ -365,7 +365,8 @@ async function loadOnboardingData(
     whichRegion: findFieldName(employeeFields, ['WhichRegion'], 'WhichRegion'),
     isHistory: findFieldName(employeeFields, ['IsHistory'], 'IsHistory'),
     hasPassed: findFieldName(employeeFields, ['HasPassed', 'IsPassed'], 'HasPassed'),
-    tasksCreated: findFieldName(employeeFields, ['TasksCreated'], 'TasksCreated')
+    tasksCreated: findFieldName(employeeFields, ['TasksCreated'], 'TasksCreated'),
+    workEmail: findFieldName(employeeFields, ['WorkEmailAddress'], 'WorkEmailAddress')
   };
 
   const tasksByEmployee: IOnboardingData['tasksByEmployee'] = {};
@@ -466,6 +467,7 @@ async function loadOnboardingData(
       tasksCreated,
       hireDate: displayDate(readValue(item, [employeeNameFields.probationStart])),
       probationEndDate: displayDate(readValue(item, [employeeNameFields.probationEnd])),
+      workEmail: textValue(readValue(item, [employeeNameFields.workEmail])),
       steps: stepStatuses,
       stepPeriods: groups.map(group => process?.get(group.id)?.period || ''),
       hasPassed

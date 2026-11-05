@@ -63,7 +63,7 @@ export default function HomePage(props: IHomePageProps): React.ReactElement {
         {!loading && !error && data.employees.length === 0 && <p className="tw-text-sm tw-text-gray-500">Шинэ ажилтан алга.</p>}
 
         {viewMode === 'grid'
-          ? <EmployeeCardGrid employees={data.employees} onSelectEmployee={onSelectEmployee} />
+          ? <EmployeeCardGrid employees={data.employees} graph={props.graphService} onSelectEmployee={onSelectEmployee} />
           : <EmployeeTable employees={data.employees} steps={data.steps} onSelectEmployee={onSelectEmployee} />}
       </div>
     </div>

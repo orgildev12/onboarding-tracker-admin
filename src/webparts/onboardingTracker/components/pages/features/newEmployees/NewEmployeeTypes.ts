@@ -51,6 +51,8 @@ export interface INewEmployeeRecord extends INewEmployeeDraft {
   probationEndDate: string;
   workStartDate: string;
   tasksCreated: boolean;
+  // true when TaskID 43's TaskResultsStatusFields row has Status "Дууссан" (the onboarding process is finished)
+  processFinished: boolean;
 }
 
 export interface INewEmployeeData {

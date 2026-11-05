@@ -32,6 +32,8 @@ export interface IEmployee {
   tasksCreated?: boolean;
   hireDate: string;
   probationEndDate: string;
+  // used to fetch the Microsoft 365 profile photo; '' when not entered yet
+  workEmail: string;
   // one status per IProcessStep, in the same order
   steps: StepStatus[];
   // "began → ended" text per step, '' when the step has not started

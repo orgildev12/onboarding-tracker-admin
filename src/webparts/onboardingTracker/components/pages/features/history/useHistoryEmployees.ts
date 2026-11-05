@@ -65,6 +65,7 @@ function toHistoryEmployee(item: ListItem, jobs: Map<number, string>): IHistoryE
     progress: 0,
     hireDate: displayDate(item.ProbationStartDate),
     probationEndDate,
+    workEmail: '',
     steps: [],
     hasPassed: textValue(item.HasPassed),
     result: passed ? 'passed' : 'failed',
