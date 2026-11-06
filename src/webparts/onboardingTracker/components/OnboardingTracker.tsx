@@ -18,6 +18,7 @@ import { getUserRole } from '../services/userRole';
 import type { UserRole } from '../services/userRole';
 import type { IEmployee } from '../models/Employee';
 import PageIcon from './pages/features/common/PageIcon';
+import ConfirmDialogHost from './pages/features/common/ConfirmDialog';
 import { Icon } from '@fluentui/react/lib/Icon';
 import { Customizer } from '@fluentui/react/lib/Utilities';
 import { DARK_THEME, readDarkChoice, readSystemDark, saveDarkMode } from './darkTheme';
@@ -196,6 +197,7 @@ export default class OnboardingTracker extends React.Component<IOnboardingTracke
           />
           <main className={`${styles.content}${fullscreen ? ' tw-overflow-auto' : ''}`}>{this._renderPage()}</main>
         </div>
+        <ConfirmDialogHost />
       </div>
       </Customizer>
     );

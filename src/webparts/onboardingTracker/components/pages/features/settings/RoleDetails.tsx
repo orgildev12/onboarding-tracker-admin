@@ -7,6 +7,7 @@ import styles from '../../../OnboardingTracker.module.scss';
 import PersonPicker from '../newEmployees/PersonPicker';
 import UserPersona from '../newEmployees/UserPersona';
 import SearchableSelect from '../common/SearchableSelect';
+import { confirmDialog } from '../common/ConfirmDialog';
 
 export interface IRoleDetailsProps {
   role: IPositionRole;
@@ -74,21 +75,19 @@ export default function RoleDetails({ role, tasks, graph, personService, onAddOw
     })().catch(() => undefined);
   };
 
-  const remove = (owner: IRoleOwner): void => {
-    if (!window.confirm(`"${owner.name || 'Хариуцагч'}"-г "${role.title}" албан тушаалын хариуцагчаас хасах уу?`)) {
+  const remove = async (owner: IRoleOwner): Promise<void> => {
+    if (!(await confirmDialog(`"${owner.name || 'Хариуцагч'}"-г "${role.title}" албан тушаалын хариуцагчаас хасах уу?`))) {
       return;
     }
     setError('');
     setRemovingId(owner.id);
-    (async (): Promise<void> => {
-      try {
-        await onRemoveOwner(owner);
-      } catch (e) {
-        setError((e as Error).message);
-      } finally {
-        setRemovingId(undefined);
-      }
-    })().catch(() => undefined);
+    try {
+      await onRemoveOwner(owner);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRemovingId(undefined);
+    }
   };
 
   const cancelAddDuty = (): void => {
@@ -115,21 +114,19 @@ export default function RoleDetails({ role, tasks, graph, personService, onAddOw
     })().catch(() => undefined);
   };
 
-  const removeDuty = (taskId: number, title: string): void => {
-    if (!window.confirm(`"${title}" үүргийг "${role.title}" албан тушаалаас хасах уу?`)) {
+  const removeDuty = async (taskId: number, title: string): Promise<void> => {
+    if (!(await confirmDialog(`"${title}" үүргийг "${role.title}" албан тушаалаас хасах уу?`))) {
       return;
     }
     setError('');
     setRemovingDutyId(taskId);
-    (async (): Promise<void> => {
-      try {
-        await onUnassignDuty(taskId);
-      } catch (e) {
-        setError((e as Error).message);
-      } finally {
-        setRemovingDutyId(undefined);
-      }
-    })().catch(() => undefined);
+    try {
+      await onUnassignDuty(taskId);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRemovingDutyId(undefined);
+    }
   };
 
   return (

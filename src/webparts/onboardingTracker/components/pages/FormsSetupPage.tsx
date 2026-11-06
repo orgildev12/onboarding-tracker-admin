@@ -8,6 +8,7 @@ import QuestionEditor from './features/forms/QuestionEditor';
 import type { IFormDraft } from './features/forms/FormsSetupTypes';
 import { EMPTY_FORM, newQuestion, validateForm } from './features/forms/FormsSetupTypes';
 import { useFormsSetup } from './features/forms/useFormsSetup';
+import { confirmDialog } from './features/common/ConfirmDialog';
 
 type FormsSetupPageProps = Pick<IOnboardingTrackerProps, 'listService' | 'createListService'>;
 
@@ -43,8 +44,8 @@ export default function FormsSetupPage(props: FormsSetupPageProps): React.ReactE
     return () => { cancelled = true; };
   }, [taskId, loadForm]);
 
-  const selectTask = (id: number): void => {
-    if (dirty && !window.confirm('Хадгалаагүй өөрчлөлт устах болно. Үргэлжлүүлэх үү?')) {
+  const selectTask = async (id: number): Promise<void> => {
+    if (dirty && !(await confirmDialog('Хадгалаагүй өөрчлөлт устах болно. Үргэлжлүүлэх үү?'))) {
       return;
     }
     setOriginal(EMPTY_FORM);
@@ -97,8 +98,8 @@ export default function FormsSetupPage(props: FormsSetupPageProps): React.ReactE
       return { ...current, questions };
     });
 
-  const removeQuestion = (key: string): void => {
-    if (!window.confirm('Энэ асуултыг хасах уу? Хадгалахад асуулт болон түүний хариултууд устна.')) {
+  const removeQuestion = async (key: string): Promise<void> => {
+    if (!(await confirmDialog('Энэ асуултыг хасах уу? Хадгалахад асуулт болон түүний хариултууд устна.'))) {
       return;
     }
     setDraft(current => ({ ...current, questions: current.questions.filter(q => q.key !== key) }));
@@ -122,7 +123,7 @@ export default function FormsSetupPage(props: FormsSetupPageProps): React.ReactE
           disabled={busy || tasks.length === 0}
           options={tasks.map(t => ({ key: t.id, text: t.title }))}
           selectedKey={taskId}
-          onChange={(_, option) => { if (option) { selectTask(Number(option.key)); } }}
+          onChange={(_, option) => { if (option) { selectTask(Number(option.key)).catch(() => undefined); } }}
         />
       )}
 
@@ -144,7 +145,7 @@ export default function FormsSetupPage(props: FormsSetupPageProps): React.ReactE
                 disabled={busy}
                 onChange={next => updateQuestion(question.key, next)}
                 onMove={delta => moveQuestion(index, delta)}
-                onRemove={() => removeQuestion(question.key)}
+                onRemove={() => { removeQuestion(question.key).catch(() => undefined); }}
               />
             ))}
           </div>

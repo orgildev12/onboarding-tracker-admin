@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { IPositionRole } from '../../../../models/PositionRole';
 import PageIcon from '../common/PageIcon';
+import { confirmDialog } from '../common/ConfirmDialog';
 
 export interface IPositionSidebarProps {
   roles: IPositionRole[];
@@ -56,21 +57,19 @@ export default function PositionSidebar({ roles, selectedRoleId, canDelete, onSe
     })().catch(() => undefined);
   };
 
-  const remove = (role: IPositionRole): void => {
-    if (!window.confirm(`"${role.title}" албан тушаалыг устгах уу? Үүнтэй холбоотой хариуцагч болон хамаарах үүргүүд цэвэрлэгдэнэ.`)) {
+  const remove = async (role: IPositionRole): Promise<void> => {
+    if (!(await confirmDialog(`"${role.title}" албан тушаалыг устгах уу? Үүнтэй холбоотой хариуцагч болон хамаарах үүргүүд цэвэрлэгдэнэ.`))) {
       return;
     }
     setError('');
     setDeletingId(role.id);
-    (async (): Promise<void> => {
-      try {
-        await onDeleteRole(role.id);
-      } catch (e) {
-        setError((e as Error).message);
-      } finally {
-        setDeletingId(undefined);
-      }
-    })().catch(() => undefined);
+    try {
+      await onDeleteRole(role.id);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setDeletingId(undefined);
+    }
   };
 
   const create = (): void => {

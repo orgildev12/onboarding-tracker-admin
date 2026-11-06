@@ -8,6 +8,7 @@ import TitleDialog from './features/jobs/TitleDialog';
 import type { IJob, IJobGroup, IJobOwner, IJobTask, IJobTaskDraft } from './features/jobs/JobSettingsTypes';
 import { isOwnedBy } from './features/jobs/JobSettingsTypes';
 import { useJobSettings } from './features/jobs/useJobSettings';
+import { confirmDialog } from './features/common/ConfirmDialog';
 
 type JobSettingsPageProps = Pick<
   IOnboardingTrackerProps,
@@ -57,12 +58,12 @@ export default function JobSettingsPage(props: JobSettingsPageProps): React.Reac
     setTitleDialog(undefined);
   };
 
-  const deleteEntry = (): void => {
+  const deleteEntry = async (): Promise<void> => {
     if (!titleDialog || !titleDialog.item) {
       return;
     }
     const { kind, item } = titleDialog;
-    if (!window.confirm(`"${item.title}" болон түүний task-уудыг устгах уу? Үүнийг буцаах боломжгүй.`)) {
+    if (!(await confirmDialog(`"${item.title}" болон түүний task-уудыг устгах уу? Үүнийг буцаах боломжгүй.`))) {
       return;
     }
     setTitleDialog(undefined);
@@ -77,17 +78,17 @@ export default function JobSettingsPage(props: JobSettingsPageProps): React.Reac
     setTaskDialog(undefined);
   };
 
-  const removeTask = (task: IJobTask): void => {
-    if (!owner || !window.confirm('Энэ task-ийг хасах уу?')) {
+  const removeTask = async (task: IJobTask): Promise<void> => {
+    if (!owner || !(await confirmDialog('Энэ task-ийг хасах уу?'))) {
       return;
     }
     settings.removeJobTask(owner, task).catch(() => undefined);
   };
 
-  const assignJobToGroup = (jobId: number, groupId: number | undefined): void => {
+  const assignJobToGroup = async (jobId: number, groupId: number | undefined): Promise<void> => {
     const ownCount = data.jobTasks.filter(task => task.jobId === jobId).length;
     if (groupId !== undefined && ownCount > 0 &&
-      !window.confirm(`Энэ ажлын байрны өөрийн ${ownCount} task устгагдаж, бүлгийн task-ийг дагана. Үргэлжлүүлэх үү?`)) {
+      !(await confirmDialog(`Энэ ажлын байрны өөрийн ${ownCount} task устгагдаж, бүлгийн task-ийг дагана. Үргэлжлүүлэх үү?`))) {
       return;
     }
     settings.setJobGroup(jobId, groupId).catch(() => undefined);

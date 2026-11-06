@@ -8,6 +8,7 @@ import type { INewEmployeeDraft, INewEmployeeRecord } from './features/newEmploy
 import { useNewEmployees } from './features/newEmployees/useNewEmployees';
 import type { UserRole } from '../../services/userRole';
 import PageIcon from './features/common/PageIcon';
+import { confirmDialog } from './features/common/ConfirmDialog';
 
 type NewEmployeesPageProps = Pick<IOnboardingTrackerProps, 'newEmployeesService' | 'anketsService' | 'jobsService' | 'departmentsService' | 'graphService' | 'taskGroupProcessService' | 'taskResultsStatusFieldsService' | 'createListService' | 'listService' | 'tasksForJobsService' | 'internshipPlansService' | 'internshipTemplatesService'> & {
   // undefined while the role check hasn't resolved yet; the delete button and the finished-employees
@@ -87,8 +88,8 @@ export default function NewEmployeesPage(props: NewEmployeesPageProps): React.Re
     }
   };
 
-  const removeEmployee = (employee: INewEmployeeRecord): void => {
-    if (!window.confirm(`"${employee.lastName} ${employee.firstName}", түүний анкет болон бүх task үр дүн, хариултыг устгах уу? Үүнийг буцаах боломжгүй.`)) {
+  const removeEmployee = async (employee: INewEmployeeRecord): Promise<void> => {
+    if (!(await confirmDialog(`"${employee.lastName} ${employee.firstName}", түүний анкет болон бүх task үр дүн, хариултыг устгах уу? Үүнийг буцаах боломжгүй.`))) {
       return;
     }
     setActionError('');

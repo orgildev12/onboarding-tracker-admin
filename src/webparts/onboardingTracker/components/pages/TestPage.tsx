@@ -5,6 +5,7 @@ import type { IListField, ListItem } from '../../services/ListService';
 import TaskEditor from './features/test/TaskEditor';
 import TaskGroupEditor from './features/test/TaskGroupEditor';
 import TaskGroupSection from './features/test/TaskGroupSection';
+import { confirmDialog } from './features/common/ConfirmDialog';
 import type {
   ITask,
   ITaskAdminLookups,
@@ -287,8 +288,8 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
     this.setState({ taskEditorOpen: false, editingTask: undefined });
   };
 
-  private _deleteTask = (task: ITask): void => {
-    if (!window.confirm(`Delete task "${task.title}"? This cannot be undone.`)) {
+  private _deleteTask = async (task: ITask): Promise<void> => {
+    if (!(await confirmDialog(`Delete task "${task.title}"? This cannot be undone.`))) {
       return;
     }
     void this._mutate(async () => {
@@ -374,12 +375,12 @@ export default class TestPage extends React.Component<IOnboardingTrackerProps, I
     }).catch(() => undefined);
   };
 
-  private _deleteGroup = (group: ITaskGroup): void => {
+  private _deleteGroup = async (group: ITaskGroup): Promise<void> => {
     if (this._groupTasks(group.id).length > 0) {
       this.setState({ error: 'Move or delete this group’s tasks before deleting the group.' });
       return;
     }
-    if (!window.confirm(`Delete task group "${group.title}"? This cannot be undone.`)) {
+    if (!(await confirmDialog(`Delete task group "${group.title}"? This cannot be undone.`))) {
       return;
     }
     void this._mutate(() => this.props.taskGroupsService.deleteItem(group.id)).catch(() => undefined);
